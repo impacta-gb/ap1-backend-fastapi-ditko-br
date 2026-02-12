@@ -16,7 +16,7 @@ Este é um projeto fullstack desenvolvido pelo grupo **Ditko.br** para a discipl
 
 O sistema é baseado no seguinte diagrama entidade-relacionamento:
 
-![Diagrama ER - Achados e Perdidos](Diagrama-Achados-e-Perdidos.jpeg)
+![Diagrama ER - Achados e Perdidos](docs/Diagrama-Achados-e-Perdidos.jpeg)
 
 ### Entidades Principais
 
