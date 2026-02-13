@@ -1,0 +1,166 @@
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.application.schemas.item_schema import (
+    ItemCreate,
+    ItemResponse,
+    ItemUpdate,
+    ItemListResponse
+)
+from src.application.use_cases.item_use_cases import (
+    CreateItemUseCase,
+    GetItemByIdUseCase,
+    GetAllItemsUseCase,
+    UpdateItemUseCase,
+    DeleteItemUseCase,
+    GetItemsByCategoriaUseCase,
+    GetItemsByStatusUseCase
+)
+from src.domain.entities.item import Item
+from src.infrastructure.database.config import get_session
+from src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
+
+router = APIRouter(prefix="/items", tags=["Items"])
+
+
+@router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
+async def create_item(
+    item_data: ItemCreate,
+    session: AsyncSession = Depends(get_session)
+):
+    """Cria um novo item"""
+    repository = ItemRepositoryImpl(session)
+    use_case = CreateItemUseCase(repository)
+    
+    item = Item(
+        nome=item_data.nome,
+        categoria=item_data.categoria,
+        data_encontro=item_data.data_encontro,
+        descricao=item_data.descricao,
+        status=item_data.status,
+        local_id=item_data.local_id,
+        responsavel_id=item_data.responsavel_id
+    )
+    
+    try:
+        created_item = await use_case.execute(item)
+        return created_item
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/{item_id}", response_model=ItemResponse)
+async def get_item(
+    item_id: int,
+    session: AsyncSession = Depends(get_session)
+):
+    """Busca um item por ID"""
+    repository = ItemRepositoryImpl(session)
+    use_case = GetItemByIdUseCase(repository)
+    
+    item = await use_case.execute(item_id)
+    
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Item com ID {item_id} não encontrado"
+        )
+    
+    return item
+
+
+@router.get("/", response_model=ItemListResponse)
+async def get_all_items(
+    skip: int = 0,
+    limit: int = 100,
+    session: AsyncSession = Depends(get_session)
+):
+    """Lista todos os itens com paginação"""
+    repository = ItemRepositoryImpl(session)
+    use_case = GetAllItemsUseCase(repository)
+    
+    items = await use_case.execute(skip, limit)
+    
+    return ItemListResponse(
+        items=items,
+        total=len(items),
+        skip=skip,
+        limit=limit
+    )
+
+
+@router.put("/{item_id}", response_model=ItemResponse)
+async def update_item(
+    item_id: int,
+    item_data: ItemUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    """Atualiza um item existente"""
+    repository = ItemRepositoryImpl(session)
+    
+    # Busca o item existente
+    get_use_case = GetItemByIdUseCase(repository)
+    existing_item = await get_use_case.execute(item_id)
+    
+    if not existing_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Item com ID {item_id} não encontrado"
+        )
+    
+    # Atualiza apenas os campos fornecidos
+    update_data = item_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(existing_item, field, value)
+    
+    # Executa a atualização
+    update_use_case = UpdateItemUseCase(repository)
+    updated_item = await update_use_case.execute(item_id, existing_item)
+    
+    return updated_item
+
+
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_item(
+    item_id: int,
+    session: AsyncSession = Depends(get_session)
+):
+    """Remove um item"""
+    repository = ItemRepositoryImpl(session)
+    use_case = DeleteItemUseCase(repository)
+    
+    deleted = await use_case.execute(item_id)
+    
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Item com ID {item_id} não encontrado"
+        )
+    
+    return None
+
+
+@router.get("/categoria/{categoria}", response_model=List[ItemResponse])
+async def get_items_by_categoria(
+    categoria: str,
+    session: AsyncSession = Depends(get_session)
+):
+    """Busca itens por categoria"""
+    repository = ItemRepositoryImpl(session)
+    use_case = GetItemsByCategoriaUseCase(repository)
+    
+    items = await use_case.execute(categoria)
+    return items
+
+
+@router.get("/status/{status}", response_model=List[ItemResponse])
+async def get_items_by_status(
+    status_param: str,
+    session: AsyncSession = Depends(get_session)
+):
+    """Busca itens por status"""
+    repository = ItemRepositoryImpl(session)
+    use_case = GetItemsByStatusUseCase(repository)
+    
+    items = await use_case.execute(status_param)
+    return items
