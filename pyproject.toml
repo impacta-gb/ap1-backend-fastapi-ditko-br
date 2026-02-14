@@ -1,17 +1,24 @@
-[project]
-name = "fast-zero"
+[tool.poetry]
+name = "lostfound"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "Ryanditko",email = "yryurodriguess@gmail.com"}
-]
+description = "Sistema de Achados e Perdidos"
+authors = ["Ryanditko <yryurodriguess@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.14"
-dependencies = [
-    "fastapi[standard] (>=0.128.7,<0.129.0)"
-]
+packages = [{include = "src"}]
 
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = {extras = ["standard"], version = "^0.115.0"}
+sqlalchemy = "^2.0.0"
+aiosqlite = "^0.19.0"
+pydantic = "^2.0.0"
+pydantic-settings = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+httpx = "^0.27.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
