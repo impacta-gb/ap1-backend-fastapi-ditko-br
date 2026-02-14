@@ -42,6 +42,8 @@ class Item:
         if not self.descricao or len(self.descricao.strip()) == 0:
             raise ValueError("Descrição do item é obrigatória")
         
+        # Normaliza o status removendo acentos e salvando em minúsculas
+        self.status = self.status.lower().replace('í', 'i').replace('é', 'e').replace('á', 'a')
         if self.status not in ['disponivel', 'devolvido', 'em_analise']:
             raise ValueError("Status deve ser: disponivel, devolvido ou em_analise")
     
