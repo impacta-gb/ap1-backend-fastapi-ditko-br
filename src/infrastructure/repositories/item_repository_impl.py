@@ -112,8 +112,11 @@ class ItemRepositoryImpl(ItemRepository):
     
     async def get_by_status(self, status: str) -> List[Item]:
         """Busca itens por status"""
+        # Normaliza o status de busca da mesma forma que na entidade
+        normalized_status = status.lower().replace('í', 'i').replace('é', 'e').replace('á', 'a')
+        
         result = await self.session.execute(
-            select(ItemModel).where(ItemModel.status == status)
+            select(ItemModel).where(ItemModel.status == normalized_status)
         )
         models = result.scalars().all()
         return [self._model_to_entity(model) for model in models]
