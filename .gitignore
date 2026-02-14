@@ -245,3 +245,6 @@ $RECYCLE.BIN/
 !install*.py
 !setup*.py
 !download_*.py
+
+# banco de dados
+achados_perdidos.db

@@ -16,7 +16,7 @@ Este é um projeto fullstack desenvolvido pelo grupo **Ditko.br** para a discipl
 
 O sistema é baseado no seguinte diagrama entidade-relacionamento:
 
-![Diagrama ER - Achados e Perdidos](docs/Diagrama-Achados-e-Perdidos.jpeg)
+![Diagrama ER - Achados e Perdidos](img/Diagrama-Achados-e-Perdidos.jpeg)
 
 ### Entidades Principais
 
@@ -100,6 +100,29 @@ Registro da devolução de um item ao reclamante.
 - **JavaScript/TypeScript**: Linguagens de programação para o frontend
 - **HTML5/CSS3**: Marcação e estilização das páginas
 
+## Arquitetura do Projeto
+
+O backend foi desenvolvido seguindo a **Arquitetura Diplomata** (Clean Architecture adaptada para Python), garantindo:
+
+- Separação clara de responsabilidades em camadas
+- Independência de frameworks e bibliotecas externas
+- Alta testabilidade e manutenibilidade
+- Flexibilidade para mudanças futuras
+
+### Estado Atual da Implementação
+
+**Fase 1 - Entidade Item (Concluída)**
+
+A primeira entidade do sistema foi completamente implementada seguindo todas as camadas da Arquitetura Diplomata:
+- Domain Layer (Entidade Item + Interface Repository)
+- Application Layer (7 Use Cases + Schemas Pydantic)
+- Infrastructure Layer (Database Config + Model ORM + Repository Implementation)
+- Presentation Layer (7 Endpoints REST)
+
+**Nota Importante**: Nesta fase inicial, as foreign keys (`local_id` e `responsavel_id`) foram temporariamente implementadas como campos INTEGER simples, sem constraints de banco de dados. Isso permite testar a entidade Item de forma isolada. As constraints serão adicionadas quando as entidades `Local` e `Responsável` forem implementadas nas próximas fases.
+
+Para mais detalhes sobre a arquitetura, consulte a [documentação completa](docs/ARCHITECTURE.md).
+
 ## Instalação
 
 ### Pré-requisitos
@@ -112,7 +135,6 @@ Registro da devolução de um item ao reclamante.
 Clone o repositório:
 ```bash
 git clone https://github.com/impacta-gb/ap1-backend-fastapi-ditko-br.git
-cd LostFoundFullstack
 ```
 
 Instale as dependências usando Poetry:
@@ -120,17 +142,19 @@ Instale as dependências usando Poetry:
 poetry install
 ```
 
-Ative o ambiente virtual:
-```bash
-poetry shell
-```
-
 Execute o servidor de desenvolvimento:
 ```bash
-poetry run uvicorn fast_zero.app:app --reload
+poetry run uvicorn app:app --reload
 ```
 
-Acesse a documentação interativa da API:
+Ou usando Python diretamente:
+```bash
+python -m uvicorn app:app --reload
+```
+
+A API estará disponível em: http://localhost:8000
+
+Acesse a documentação interativa:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
