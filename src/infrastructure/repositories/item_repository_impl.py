@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.item import Item
 from src.domain.repositories.item_repository import ItemRepository
@@ -120,3 +120,8 @@ class ItemRepositoryImpl(ItemRepository):
         )
         models = result.scalars().all()
         return [self._model_to_entity(model) for model in models]
+    
+    async def count(self) -> int:
+        """Conta o total de itens no banco de dados"""
+        result = await self.session.execute(select(func.count(ItemModel.id)))
+        return result.scalar()

@@ -40,3 +40,8 @@ class ItemRepository(ABC):
     async def get_by_status(self, status: str) -> List[Item]:
         """Busca itens por status"""
         pass
+    
+    @abstractmethod
+    async def count(self) -> int:
+        """Conta o total de itens no repositório"""
+        pass

@@ -60,10 +60,11 @@ async def get_all_items(
     use_case = GetAllItemsUseCase(repository)
     
     items = await use_case.execute(skip, limit)
+    total = await repository.count()
     
     return ItemListResponse(
         items=items,
-        total=len(items),
+        total=total,
         skip=skip,
         limit=limit
     )
