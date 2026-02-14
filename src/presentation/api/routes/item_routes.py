@@ -28,7 +28,7 @@ async def create_item(
     item_data: ItemCreate,
     session: AsyncSession = Depends(get_session)
 ):
-    """Cria um novo item"""
+    """Cria um novo item (status inicial sempre será 'disponivel')"""
     repository = ItemRepositoryImpl(session)
     use_case = CreateItemUseCase(repository)
     
@@ -37,7 +37,7 @@ async def create_item(
         categoria=item_data.categoria,
         data_encontro=item_data.data_encontro,
         descricao=item_data.descricao,
-        status=item_data.status,
+        status="disponivel",  # Use case garante que seja sempre disponivel
         local_id=item_data.local_id,
         responsavel_id=item_data.responsavel_id
     )

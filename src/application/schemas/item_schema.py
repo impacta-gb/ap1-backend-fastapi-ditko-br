@@ -16,7 +16,8 @@ class ItemBase(BaseModel):
 
 class ItemCreate(ItemBase):
     """Schema para criação de Item"""
-    pass
+    # Remove status - novos itens sempre começam como 'disponivel'
+    status: str = Field(default="disponivel", description="Status do item (sempre 'disponivel' na criação)")
 
 
 class ItemUpdate(BaseModel):
