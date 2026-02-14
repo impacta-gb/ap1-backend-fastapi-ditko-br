@@ -140,6 +140,12 @@ async def update_item(
     for field, value in update_data.items():
         setattr(existing_item, field, value)
     
+    # Revalida a entidade após as modificações
+    try:
+        existing_item.__post_init__()
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
     # Executa a atualização
     update_use_case = UpdateItemUseCase(repository)
     updated_item = await update_use_case.execute(item_id, existing_item)
