@@ -50,11 +50,9 @@ class Item:
     def marcar_como_devolvido(self) -> None:
         """Marca o item como devolvido"""
         self.status = 'devolvido'
-        self.updated_at = datetime.now()
     
     def atualizar_descricao(self, nova_descricao: str) -> None:
         """Atualiza a descrição do item"""
         if not nova_descricao or len(nova_descricao.strip()) == 0:
             raise ValueError("Nova descrição não pode estar vazia")
         self.descricao = nova_descricao
-        self.updated_at = datetime.now()
