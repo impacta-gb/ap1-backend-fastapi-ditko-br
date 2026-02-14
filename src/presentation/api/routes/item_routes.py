@@ -125,32 +125,33 @@ async def update_item(
     """Atualiza um item existente"""
     repository = ItemRepositoryImpl(session)
     
-    # Busca o item existente
-    get_use_case = GetItemByIdUseCase(repository)
-    existing_item = await get_use_case.execute(item_id)
-    
-    if not existing_item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Item com ID {item_id} não encontrado"
-        )
-    
-    # Atualiza apenas os campos fornecidos
-    update_data = item_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(existing_item, field, value)
-    
-    # Revalida a entidade após as modificações
     try:
+        # Busca o item existente
+        get_use_case = GetItemByIdUseCase(repository)
+        existing_item = await get_use_case.execute(item_id)
+        
+        if not existing_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Item com ID {item_id} não encontrado"
+            )
+        
+        # Atualiza apenas os campos fornecidos
+        update_data = item_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(existing_item, field, value)
+        
+        # Revalida a entidade após as modificações
         existing_item.__post_init__()
+        
+        # Executa a atualização
+        update_use_case = UpdateItemUseCase(repository)
+        updated_item = await update_use_case.execute(item_id, existing_item)
+        
+        return updated_item
+    
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    
-    # Executa a atualização
-    update_use_case = UpdateItemUseCase(repository)
-    updated_item = await update_use_case.execute(item_id, existing_item)
-    
-    return updated_item
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
