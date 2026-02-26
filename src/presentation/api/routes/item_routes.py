@@ -20,7 +20,7 @@ from src.domain.entities.item import Item
 from src.infrastructure.database.config import get_session
 from src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
 
-router = APIRouter(prefix="/items", tags=["Items"])
+router = APIRouter(tags=["Items"])
 
 
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
