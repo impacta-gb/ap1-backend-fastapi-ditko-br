@@ -49,10 +49,32 @@ class ResponsavelCreate(BaseModel):
 
 class ResponsavelUpdate(BaseModel):
     """Schema para atualizar um responsável existente (PUT - atualização completa)."""
+    nome: str = Field(..., min_length=1, max_length=255, description="Nome do responsável")
+    cargo: str = Field(..., min_length=1, max_length=255, description="Cargo do responsável")
+    telefone: str = Field(..., min_length=10, max_length=11, description="Telefone do responsável")
+    # ativo não pode ser alterado diretamente - use endpoint específico
+    
+    @field_validator('telefone')
+    @classmethod
+    def validate_telefone(cls, v: str) -> str:
+        """Valida formato básico do telefone."""
+        telefone_limpo = v.replace("(", "").replace(")", "").replace("-", "").replace(" ", "")
+        
+        if not telefone_limpo.isdigit():
+            raise ValueError("Telefone deve conter apenas números")
+        
+        if len(telefone_limpo) < 10 or len(telefone_limpo) > 11:
+            raise ValueError("Telefone deve ter 10 ou 11 dígitos (DDD + número)")
+        
+        return v
+
+
+class ResponsavelPatch(BaseModel):
+    """Schema para atualização parcial de responsável (PATCH - sem alterar ativo)."""
     nome: Optional[str] = Field(None, min_length=1, max_length=255, description="Nome do responsável")
     cargo: Optional[str] = Field(None, min_length=1, max_length=255, description="Cargo do responsável")
     telefone: Optional[str] = Field(None, min_length=10, max_length=11, description="Telefone do responsável")
-    ativo: Optional[bool] = Field(None, description="Status ativo/inativo")
+    # ativo não pode ser alterado diretamente - use endpoint específico
     
     @field_validator('telefone')
     @classmethod
@@ -72,8 +94,8 @@ class ResponsavelUpdate(BaseModel):
         return v
 
 
-class ResponsavelPatch(BaseModel):
-    """Schema para operações PATCH (desativar/reativar)."""
+class ResponsavelStatusUpdate(BaseModel):
+    """Schema para alterar status ativo/inativo do responsável."""
     ativo: bool = Field(..., description="Status ativo/inativo do responsável")
 
 
@@ -90,3 +112,4 @@ class ResponsavelListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+    

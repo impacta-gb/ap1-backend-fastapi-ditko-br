@@ -1,6 +1,6 @@
 from typing import List, Optional
-from src.domain.entities.responsavel import Responsavel
-from src.domain.repositories.responsavel_repository import ResponsavelRepository
+from responsavel.src.domain.entities.responsavel import Responsavel
+from responsavel.src.domain.repositories.responsavel_repository import ResponsavelRepository
 
 
 class CreateResponsavelUseCase:

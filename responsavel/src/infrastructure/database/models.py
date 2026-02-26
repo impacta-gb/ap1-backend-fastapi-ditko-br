@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean
-from src.infrastructure.database.config import Base
+from responsavel.src.infrastructure.database.config import Base
 
 class ResponsavelModel(Base):
     """Modelo SQLAlchemy para a tabela de responsáveis"""

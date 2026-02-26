@@ -1,9 +1,9 @@
 from typing import List, Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.domain.entities.responsavel import Responsavel
-from src.domain.repositories.responsavel_repository import ResponsavelRepository
-from src.infrastructure.database.models import ResponsavelModel
+from responsavel.src.domain.entities.responsavel import Responsavel
+from responsavel.src.domain.repositories.responsavel_repository import ResponsavelRepository
+from responsavel.src.infrastructure.database.models import ResponsavelModel
 
 class ResponsavelRepositoryImpl(ResponsavelRepository):
     """Implementação concreta do repositório de responsaveis usando SQLAlchemy"""

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from src.domain.entities.responsavel import Responsavel
+from responsavel.src.domain.entities.responsavel import Responsavel
 
 class ResponsavelRepository(ABC):
     """Interface abstrata para repositórios de responsáveis."""
@@ -39,3 +39,4 @@ class ResponsavelRepository(ABC):
     async def count(self) -> int:
         """Retorna a contagem total de responsáveis no repositório."""
         pass
+
