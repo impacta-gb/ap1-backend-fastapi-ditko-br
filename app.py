@@ -1,14 +1,17 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from src.presentation.api.routes import item_routes
-from src.infrastructure.database.config import init_db
+from responsavel.src.presentation.api.routes import responsavel_routes
+from src.infrastructure.database.config import init_db as init_db_item
+from responsavel.src.infrastructure.database.config import init_db as init_db_responsavel
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gerencia o ciclo de vida da aplicação"""
-    # Inicializa o banco de dados
-    await init_db()
+    # Inicializa os bancos de dados
+    await init_db_item()
+    await init_db_responsavel()
     yield
 
 app = FastAPI(
@@ -19,7 +22,8 @@ app = FastAPI(
 )
 
 # Inclui as rotas
-app.include_router(item_routes.router, prefix="/api/v1")
+app.include_router(item_routes.router, prefix="/api/v1/items")
+app.include_router(responsavel_routes.router, prefix="/api/v1/responsaveis")
 
 
 @app.get("/")
