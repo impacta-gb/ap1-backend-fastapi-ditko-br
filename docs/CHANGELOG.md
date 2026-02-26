@@ -98,7 +98,108 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - `src/application/schemas/item_schema.py`
 - **Impacto**: API mais clara para desenvolvedores frontend
 
-## [1.0.0] - 2026-02-14
+#### 10. Entidade Responsavel com Clean Architecture
+- **Descrição**: Implementação completa da entidade Responsavel seguindo padrões de Clean Architecture
+- **Componentes**:
+  - **Domain Layer**:
+    - Entidade `Responsavel` com validações de domínio (nome, cargo, telefone, status ativo)
+    - Interface `ResponsavelRepository` com todos os métodos CRUD
+  - **Application Layer**:
+    - Schemas Pydantic: `ResponsavelCreate`, `ResponsavelResponse`, `ResponsavelUpdate`, `ResponsavelPatch`, `ResponsavelStatusUpdate`, `ResponsavelListResponse`
+    - Use Cases: `CreateResponsavelUseCase`, `GetResponsavelByIdUseCase`, `GetAllResponsaveisUseCase`, `UpdateResponsavelUseCase`, `DeleteResponsavelUseCase`, `GetResponsaveisByAtivoUseCase`
+  - **Infrastructure Layer**:
+    - `ResponsavelRepositoryImpl` com implementação assíncrona usando SQLAlchemy
+    - `ResponsavelModel` para mapeamento ORM
+    - Configuração de banco de dados independente
+  - **Presentation Layer**:
+    - Rotas REST completas: POST, GET (listagem e por ID), PUT, PATCH, DELETE
+    - Rota específica para busca por status ativo: `GET /ativo/{value}`
+    - Endpoint dedicado para alteração de status: `PATCH /{id}/status`
+- **Arquivos**:
+  - `responsavel/src/domain/entities/responsavel.py`
+  - `responsavel/src/domain/repositories/responsavel_repository.py`
+  - `responsavel/src/application/schemas/responsavel_schema.py`
+  - `responsavel/src/application/use_cases/responsavel_use_cases.py`
+  - `responsavel/src/infrastructure/repositories/responsavel_repository_impl.py`
+  - `responsavel/src/infrastructure/database/models.py`
+  - `responsavel/src/infrastructure/database/config.py`
+  - `responsavel/src/presentation/api/routes/responsavel_routes.py`
+  - `app.py`
+- **Impacto**: Sistema agora possui gerenciamento completo de responsáveis por itens perdidos/encontrados
+
+#### 11. Regra de Negócio: Controle de Status Ativo
+- **Descrição**: Implementada regra de negócio que impede modificação direta do campo "ativo" em operações de atualização comuns
+- **Comportamento**:
+  - `PUT /responsaveis/{id}`: Atualiza nome, cargo e telefone, **mantém** status ativo existente
+  - `PATCH /responsaveis/{id}`: Atualização parcial de nome, cargo e/ou telefone, **mantém** status ativo existente
+  - `PATCH /responsaveis/{id}/status`: Endpoint dedicado exclusivamente para alterar status ativo/inativo
+  - `POST /responsaveis/`: Criação sempre define `ativo=True` automaticamente
+- **Justificativa**: Separação de responsabilidades - alteração de status é operação crítica de negócio que deve ser explícita
+- **Arquivos**:
+  - `responsavel/src/application/schemas/responsavel_schema.py` (removido campo `ativo` de `ResponsavelUpdate` e `ResponsavelPatch`)
+  - `responsavel/src/presentation/api/routes/responsavel_routes.py` (implementada lógica de preservação de status)
+- **Impacto**: Maior controle e auditabilidade sobre mudanças de status de responsáveis
+
+#### 12. Validação de Telefone
+- **Descrição**: Validação customizada de formato de telefone brasileiro
+- **Regras**:
+  - Apenas dígitos numéricos permitidos
+  - Comprimento: 10 ou 11 dígitos (DDD + número)
+  - Remove caracteres de formatação antes de validar
+- **Arquivos**:
+  - `responsavel/src/application/schemas/responsavel_schema.py`
+- **Impacto**: Garante consistência nos dados de contato
+
+### Corrigido
+
+#### 13. Estrutura de Módulos Python
+- **Problema**: Módulo `responsavel` não era reconhecido como pacote Python importável
+- **Solução**: Criado arquivo `responsavel/__init__.py` para tornar o diretório um módulo válido
+- **Arquivos**:
+  - `responsavel/__init__.py`
+- **Impacto**: Permite importação correta do módulo responsavel em app.py
+
+#### 14. Importações Relativas Incorretas
+- **Problema**: Arquivos dentro de `responsavel/` usavam importação `from src.` ao invés de `from responsavel.src.`
+- **Solução**: Corrigidas todas as importações para usar caminho absoluto correto
+- **Arquivos**:
+  - `responsavel/src/infrastructure/repositories/responsavel_repository_impl.py`
+  - `responsavel/src/domain/repositories/responsavel_repository.py`
+  - `responsavel/src/infrastructure/database/models.py`
+  - `responsavel/src/application/use_cases/responsavel_use_cases.py`
+  - `responsavel/src/presentation/api/routes/responsavel_routes.py`
+- **Impacto**: Elimina erros de ModuleNotFoundError durante inicialização da aplicação
+
+#### 15. Duplicação de Prefixo de Rotas
+- **Problema**: Rotas definiam prefixo no router e novamente no `app.include_router()`, causando URLs como `/api/v1/items/items/`
+- **Solução**: Removido prefixo dos routers (`APIRouter(tags=[...])`), mantendo apenas no app.py
+- **Arquivos**:
+  - `src/presentation/api/routes/item_routes.py` (removido `prefix="/items"`)
+  - `responsavel/src/presentation/api/routes/responsavel_routes.py` (removido `prefix="/responsaveis"`)
+- **Impacto**: URLs corretas: `/api/v1/items/` e `/api/v1/responsaveis/`
+
+#### 16. Conflito de Nomes em Imports
+- **Problema**: Importações duplicadas de `init_db` com mesmo nome causavam conflito
+- **Solução**: Renomeadas importações com aliases: `init_db_item` e `init_db_responsavel`
+- **Arquivos**:
+  - `app.py`
+- **Impacto**: Ambos os bancos de dados são inicializados corretamente no startup
+
+### Refatorado
+
+#### 17. Separação de Schemas de Update
+- **Descrição**: Criados schemas distintos para diferentes tipos de atualização
+- **Schemas**:
+  - `ResponsavelUpdate`: PUT - atualização completa (nome, cargo, telefone - campos obrigatórios)
+  - `ResponsavelPatch`: PATCH - atualização parcial (nome, cargo, telefone - campos opcionais)
+  - `ResponsavelStatusUpdate`: PATCH /status - alteração de status ativo (campo único obrigatório)
+- **Justificativa**: Seguir convenções REST (PUT vs PATCH) e isolar operação crítica de mudança de status
+- **Arquivos**:
+  - `responsavel/src/application/schemas/responsavel_schema.py`
+  - `responsavel/src/presentation/api/routes/responsavel_routes.py`
+- **Impacto**: API mais semântica e aderente a padrões REST
+
+## [1.0.0] - 2026-02-26
 
 ### Implementado
 - Sistema de Achados e Perdidos com arquitetura Clean Architecture (Arquitetura Diplomata)
