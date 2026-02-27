@@ -7,6 +7,7 @@ class ItemModel(Base):
     """Modelo SQLAlchemy para a tabela de itens"""
     
     __tablename__ = "items"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nome = Column(String(255), nullable=False, index=True)
