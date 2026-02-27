@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from src.presentation.api.routes import item_routes
+from item.src.presentation.api.routes import item_routes
 from responsavel.src.presentation.api.routes import responsavel_routes
-from src.infrastructure.database.config import init_db as init_db_item
+from item.src.infrastructure.database.config import init_db as init_db_item
 from responsavel.src.infrastructure.database.config import init_db as init_db_responsavel
 
 
