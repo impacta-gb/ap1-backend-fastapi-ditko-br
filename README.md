@@ -164,9 +164,20 @@ Acesse a documentação interativa:
 
 Projeto desenvolvido para a disciplina de Frameworks Full Stack:
 
-**Professor:** Giovani Bontempo
-
 **Instituição:** Faculdade Impacta
+
+**Professor:**
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/giovbon">
+        <img src="https://github.com/giovbon.png" width="100px;" alt="Giovani Bontempo"/><br>
+        <sub><b>Giovani Bontempo</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
 
 **Integrantes:**
 
