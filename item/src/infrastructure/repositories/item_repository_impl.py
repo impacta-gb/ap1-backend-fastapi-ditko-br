@@ -1,9 +1,9 @@
 from typing import List, Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.domain.entities.item import Item
-from src.domain.repositories.item_repository import ItemRepository
-from src.infrastructure.database.models import ItemModel
+from item.src.domain.entities.item import Item
+from item.src.domain.repositories.item_repository import ItemRepository
+from item.src.infrastructure.database.models import ItemModel
 
 
 class ItemRepositoryImpl(ItemRepository):

@@ -1,13 +1,13 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.application.schemas.item_schema import (
+from item.src.application.schemas.item_schema import (
     ItemCreate,
     ItemResponse,
     ItemUpdate,
     ItemListResponse
 )
-from src.application.use_cases.item_use_cases import (
+from item.src.application.use_cases.item_use_cases import (
     CreateItemUseCase,
     GetItemByIdUseCase,
     GetAllItemsUseCase,
@@ -16,9 +16,9 @@ from src.application.use_cases.item_use_cases import (
     GetItemsByCategoriaUseCase,
     GetItemsByStatusUseCase
 )
-from src.domain.entities.item import Item
-from src.infrastructure.database.config import get_session
-from src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
+from item.src.domain.entities.item import Item
+from item.src.infrastructure.database.config import get_session
+from item.src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
 
 router = APIRouter(tags=["Items"])
 

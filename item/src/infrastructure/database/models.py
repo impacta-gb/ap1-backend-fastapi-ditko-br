@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.sql import func
-from src.infrastructure.database.config import Base
+from item.src.infrastructure.database.config import Base
 
 
 class ItemModel(Base):
