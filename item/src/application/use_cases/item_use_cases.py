@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
-from src.domain.entities.item import Item
-from src.domain.repositories.item_repository import ItemRepository
+from item.src.domain.entities.item import Item
+from item.src.domain.repositories.item_repository import ItemRepository
 
 
 class CreateItemUseCase:
