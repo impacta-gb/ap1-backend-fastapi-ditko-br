@@ -247,4 +247,5 @@ $RECYCLE.BIN/
 !download_*.py
 
 # banco de dados
+*.db
 achados_perdidos.db
