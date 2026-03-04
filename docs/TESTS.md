@@ -248,6 +248,253 @@ pytest item/tests/unit/test_item_schema.py -v
 
 ---
 
+## Entidade: Responsável
+
+### Testes Unitários
+
+**Arquivo:** `responsavel/tests/unit/test_responsavel_entity.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_responsavel_valido` | Cria responsável com dados válidos |
+| `test_criar_responsavel_ativo_false` | Criação com ativo=False |
+| `test_criar_responsavel_com_id` | Criação simulando objeto do banco |
+| `test_criar_responsavel_sem_nome` | Valida obrigatoriedade do nome |
+| `test_criar_responsavel_com_nome_apenas_espacos` | Valida nome com apenas espaços |
+| `test_criar_responsavel_sem_cargo` | Valida obrigatoriedade do cargo |
+| `test_criar_responsavel_com_cargo_apenas_espacos` | Valida cargo com apenas espaços |
+| `test_criar_responsavel_sem_telefone` | Valida obrigatoriedade do telefone |
+| `test_criar_responsavel_com_telefone_apenas_espacos` | Valida telefone com apenas espaços |
+| `test_criar_responsavel_com_ativo_nao_booleano` | Valida que ativo deve ser booleano |
+| `test_desativar_responsavel` | Testa método de negócio desativar |
+| `test_desativar_responsavel_ja_inativo` | Desativar responsável já inativo |
+| `test_responsavel_representacao` | Testa instanciação com todos os campos |
+
+**Executar:**
+```bash
+pytest responsavel/tests/unit/test_responsavel_entity.py -v
+```
+
+---
+
+**Arquivo:** `responsavel/tests/unit/test_responsavel_use_cases.py`
+
+#### CreateResponsavelUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_responsavel_com_sucesso` | Criação válida |
+| `test_criar_responsavel_sempre_define_ativo_como_true` | Força ativo=True na criação |
+| `test_criar_responsavel_com_telefone_invalido` | Bloqueia telefone muito curto |
+| `test_criar_responsavel_com_telefone_letras` | Bloqueia telefone com letras |
+| `test_criar_responsavel_com_telefone_formatado` | Aceita telefone com formatação válida |
+
+#### GetResponsavelByIdUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_responsavel_existente` | Retorna responsável encontrado |
+| `test_buscar_responsavel_inexistente` | Retorna None |
+| `test_buscar_responsavel_com_id_invalido` | Valida ID > 0 |
+| `test_buscar_responsavel_com_id_negativo` | Valida ID negativo |
+
+#### GetAllResponsaveisUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_listar_todos_responsaveis` | Lista com paginação padrão |
+| `test_listar_responsaveis_com_paginacao_customizada` | Testa skip/limit customizado |
+| `test_listar_responsaveis_com_skip_negativo` | Bloqueia skip < 0 |
+| `test_listar_responsaveis_com_limit_zero` | Bloqueia limit ≤ 0 |
+| `test_listar_responsaveis_com_limit_maior_que_1000` | Bloqueia limit > 1000 |
+
+#### UpdateResponsavelUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_atualizar_responsavel_com_sucesso` | Atualização válida |
+| `test_atualizar_responsavel_inexistente` | Retorna None se não encontrar |
+| `test_atualizar_responsavel_com_telefone_invalido` | Bloqueia telefone inválido |
+| `test_atualizar_responsavel_mesmo_telefone_nao_valida` | Mesmo telefone não revalida |
+
+#### DeleteResponsavelUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_deletar_responsavel_existente` | Exclui responsável existente |
+| `test_deletar_responsavel_inexistente` | Retorna False |
+| `test_deletar_responsavel_com_id_invalido` | Valida ID > 0 |
+
+#### DesativarResponsavelUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_desativar_responsavel_ativo` | Desativa responsável ativo |
+| `test_desativar_responsavel_ja_inativo` | Retorna sem erro se já inativo |
+| `test_desativar_responsavel_inexistente` | Retorna None |
+| `test_desativar_responsavel_com_id_invalido` | Valida ID > 0 |
+
+#### ReativarResponsavelUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_reativar_responsavel_inativo` | Reativa responsável inativo |
+| `test_reativar_responsavel_ja_ativo` | Retorna sem erro se já ativo |
+| `test_reativar_responsavel_inexistente` | Retorna None |
+| `test_reativar_responsavel_com_id_invalido` | Valida ID > 0 |
+
+#### GetResponsaveisByAtivoUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_responsaveis_ativos` | Filtra responsáveis ativos |
+| `test_buscar_responsaveis_inativos` | Filtra responsáveis inativos |
+| `test_buscar_responsaveis_com_ativo_nao_booleano` | Valida parâmetro booleano |
+
+**Executar:**
+```bash
+pytest responsavel/tests/unit/test_responsavel_use_cases.py -v
+```
+
+---
+
+**Arquivo:** `responsavel/tests/unit/test_responsavel_schema.py`
+
+| Teste | Schema | Descrição |
+|-------|--------|-----------|
+| `test_criar_schema_com_dados_validos` | ResponsavelCreate | Validação sucesso |
+| `test_schema_com_nome_vazio_falha` | ResponsavelCreate | Valida nome |
+| `test_schema_com_cargo_vazio_falha` | ResponsavelCreate | Valida cargo |
+| `test_schema_com_telefone_vazio_falha` | ResponsavelCreate | Valida telefone |
+| `test_schema_com_campo_faltando_falha` | ResponsavelCreate | Campos obrigatórios |
+| `test_schema_com_telefone_invalido_falha` | ResponsavelCreate | Formato inválido |
+| `test_schema_com_telefone_com_letras_falha` | ResponsavelCreate | Telefone com letras |
+| `test_schema_sem_campo_ativo` | ResponsavelCreate | Ativo ausente do schema |
+| `test_schema_serializa_para_dict` | ResponsavelCreate | Serialização dict |
+| `test_schema_serializa_para_json` | ResponsavelCreate | Serialização JSON |
+| `test_schema_com_nome_longo_demais_falha` | ResponsavelCreate | Nome muito longo |
+| `test_update_schema_com_dados_validos` | ResponsavelUpdate | Update válido |
+| `test_update_schema_sem_campo_ativo` | ResponsavelUpdate | Ativo ausente no update |
+| `test_update_schema_com_telefone_invalido_falha` | ResponsavelUpdate | Telefone inválido |
+| `test_patch_schema_com_apenas_nome` | ResponsavelPatch | Patch parcial nome |
+| `test_patch_schema_com_apenas_cargo` | ResponsavelPatch | Patch parcial cargo |
+| `test_patch_schema_com_todos_campos` | ResponsavelPatch | Patch com todos campos |
+| `test_patch_schema_vazio` | ResponsavelPatch | Patch sem campos |
+| `test_patch_schema_com_telefone_invalido_falha` | ResponsavelPatch | Telefone inválido |
+| `test_response_schema_com_todos_campos` | ResponsavelResponse | Serialização |
+| `test_response_schema_sem_id_falha` | ResponsavelResponse | ID obrigatório |
+| `test_response_schema_serializa_para_json` | ResponsavelResponse | JSON serialização |
+| `test_list_response_schema_vazio` | ResponsavelListResponse | Lista vazia |
+| `test_list_response_schema_com_responsaveis` | ResponsavelListResponse | Lista com dados |
+| `test_list_response_schema_paginacao` | ResponsavelListResponse | Paginação |
+| `test_status_update_com_ativo_true` | ResponsavelStatusUpdate | ativo=True |
+| `test_status_update_com_ativo_false` | ResponsavelStatusUpdate | ativo=False |
+| `test_status_update_sem_ativo_falha` | ResponsavelStatusUpdate | Ativo obrigatório |
+
+**Executar:**
+```bash
+pytest responsavel/tests/unit/test_responsavel_schema.py -v
+```
+
+---
+
+### Testes de Integração
+
+**Arquivo:** `responsavel/tests/integration/test_responsavel_repository.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_responsavel` | CRUD: Create |
+| `test_buscar_responsavel_por_id` | CRUD: Read |
+| `test_buscar_responsavel_por_id_inexistente` | Read retorna None |
+| `test_listar_todos_responsaveis` | Lista todos |
+| `test_listar_responsaveis_com_paginacao` | Paginação funcional |
+| `test_atualizar_responsavel` | CRUD: Update |
+| `test_atualizar_responsavel_inexistente` | Update retorna None |
+| `test_deletar_responsavel` | CRUD: Delete |
+| `test_deletar_responsavel_inexistente` | Delete retorna False |
+| `test_buscar_por_ativo_true` | Filtro ativo/inativo |
+| `test_contar_total_de_responsaveis` | Método count() |
+| `test_conversao_model_to_entity` | Conversão ORM ↔ Domain |
+| `test_desativar_responsavel_via_update` | Desativar via update |
+
+**Executar:**
+```bash
+pytest responsavel/tests/integration/test_responsavel_repository.py -v
+```
+
+---
+
+**Arquivo:** `responsavel/tests/integration/test_responsavel_end_to_end.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_fluxo_completo_criar_buscar_atualizar_deletar` | CRUD completo |
+| `test_fluxo_desativar_e_reativar_responsavel` | Fluxo desativar/reativar |
+| `test_fluxo_listar_com_paginacao` | Paginação end-to-end |
+| `test_fluxo_buscar_por_status_ativo` | Filtro ativo/inativo |
+| `test_fluxo_validacao_telefone_invalido_na_criacao` | Validação telefone |
+| `test_fluxo_desativar_ja_inativo_sem_erro` | Idempotência desativar |
+| `test_fluxo_reativar_ja_ativo_sem_erro` | Idempotência reativar |
+| `test_fluxo_contar_total_de_responsaveis` | Count end-to-end |
+| `test_fluxo_metodo_entidade_desativar_responsavel` | Método domain |
+| `test_fluxo_validacao_id_invalido_nas_buscas` | Validação IDs |
+
+**Executar:**
+```bash
+pytest responsavel/tests/integration/test_responsavel_end_to_end.py -v
+```
+
+---
+
+### Testes de API
+
+**Arquivo:** `responsavel/tests/integration/test_responsavel_api.py`
+
+#### POST /api/v1/responsaveis
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_criar_responsavel_com_sucesso` | 201 | Cria responsável válido |
+| `test_criar_responsavel_com_dados_invalidos` | 422 | Valida campos obrigatórios |
+| `test_criar_responsavel_com_nome_vazio` | 400/422 | Valida nome não vazio |
+| `test_criar_responsavel_com_telefone_invalido` | 400/422 | Valida telefone |
+| `test_criar_responsavel_ativo_sempre_true` | 201 | Sempre inicia como ativo |
+
+#### GET /api/v1/responsaveis/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_buscar_responsavel_existente` | 200 | Retorna responsável |
+| `test_buscar_responsavel_inexistente` | 404 | Não encontrado |
+| `test_buscar_responsavel_com_id_string` | 422 | Tipo inválido |
+
+#### GET /api/v1/responsaveis
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_listar_todos_responsaveis` | 200 | Lista responsáveis |
+| `test_listar_responsaveis_com_paginacao` | 200 | Paginação |
+| `test_listar_responsaveis_com_skip_negativo` | 400/500 | Valida skip |
+| `test_listar_responsaveis_com_limit_invalido` | 400/500 | Valida limit |
+
+#### PUT /api/v1/responsaveis/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_atualizar_responsavel_com_sucesso` | 200 | Atualiza responsável |
+| `test_atualizar_responsavel_inexistente` | 404 | Não encontrado |
+| `test_atualizar_responsavel_com_telefone_invalido` | 400/422 | Telefone inválido |
+
+#### DELETE /api/v1/responsaveis/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_deletar_responsavel_com_sucesso` | 204 | Exclui responsável |
+| `test_deletar_responsavel_inexistente` | 404 | Não encontrado |
+
+#### Status / Ativo
+| Teste | Endpoint | Descrição |
+|-------|----------|-----------|
+| `test_buscar_responsaveis_ativos` | GET /api/v1/responsaveis/ativo/true | Filtro ativos |
+| `test_buscar_responsaveis_inativos` | GET /api/v1/responsaveis/ativo/false | Filtro inativos |
+| `test_alterar_status_responsavel` | PATCH /api/v1/responsaveis/{id}/status | Altera status |
+| `test_alterar_status_responsavel_inexistente` | PATCH /api/v1/responsaveis/{id}/status | Não encontrado |
+
+**Executar:**
+```bash
+pytest responsavel/tests/integration/test_responsavel_api.py -v
+```
+
+---
+
 ## Template para Nova Entidade
 
 ### 1. Criar Estrutura
@@ -347,8 +594,10 @@ class TestEntidadeAPI:
 - **API:** 36 (Routes: 26, Schemas: 10)
 - **Performance:** 5
 
-### Responsável (Planejado)
-- **Total:** ~100 testes (em desenvolvimento)
+### Responsável (Implementado)
+- **Total:** 117 testes
+- **Unitários:** 73 (Entidade: 13, Use Cases: 32, Schemas: 28)
+- **Integração:** 44 (Repository: 13, E2E: 10, API: 21)
 
 ### Local (Planejado)
 - **Total:** ~80 testes (em desenvolvimento)
@@ -416,4 +665,4 @@ engine = create_async_engine(
 
 ---
 
-**Última atualização:** Fevereiro 2026 - Item (113 testes implementados)
+**Última atualização:** Março 2026 - Responsável (117 testes implementados)

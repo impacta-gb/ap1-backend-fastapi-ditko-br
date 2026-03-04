@@ -109,18 +109,6 @@ O backend foi desenvolvido seguindo a **Arquitetura Diplomata** (Clean Architect
 - Alta testabilidade e manutenibilidade
 - Flexibilidade para mudanças futuras
 
-### Estado Atual da Implementação
-
-**Fase 1 - Entidade Item (Concluída)**
-
-A primeira entidade do sistema foi completamente implementada seguindo todas as camadas da Arquitetura Diplomata:
-- Domain Layer (Entidade Item + Interface Repository)
-- Application Layer (7 Use Cases + Schemas Pydantic)
-- Infrastructure Layer (Database Config + Model ORM + Repository Implementation)
-- Presentation Layer (7 Endpoints REST)
-
-**Nota Importante**: Nesta fase inicial, as foreign keys (`local_id` e `responsavel_id`) foram temporariamente implementadas como campos INTEGER simples, sem constraints de banco de dados. Isso permite testar a entidade Item de forma isolada. As constraints serão adicionadas quando as entidades `Local` e `Responsável` forem implementadas nas próximas fases.
-
 Para mais detalhes sobre a arquitetura, consulte a [documentação completa](docs/ARCHITECTURE.md).
 
 ## Instalação
