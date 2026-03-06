@@ -7,6 +7,141 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não Lançado]
 
+### Adicionado
+
+#### 18. Entidade Local com Clean Architecture
+- **Descrição**: Implementação completa da entidade Local seguindo padrões de Clean Architecture (Arquitetura Diplomata)
+- **Componentes**:
+  - **Domain Layer**:
+    - Entidade `Local` com validações de domínio (tipo, descrição e bairro não podem ser vazios)
+    - Método de domínio `atualizar_descricao()` com validação
+    - Interface `LocalRepository` com métodos CRUD + `get_by_bairro()` + `count()`
+  - **Application Layer**:
+    - Schemas Pydantic: `LocalBase`, `LocalCreate`, `LocalUpdate`, `LocalResponse` (com `created_at`/`updated_at`), `LocalListResponse`
+    - Use Cases: `CreateLocalUseCase`, `GetLocalByIdUseCase`, `GetAllLocalsUseCase`, `UpdateLocalUseCase`, `DeleteLocalUseCase`, `GetLocalsByBairroUseCase`
+  - **Infrastructure Layer**:
+    - `LocalRepositoryImpl` com implementação assíncrona usando SQLAlchemy
+    - `LocalModel` com colunas `created_at` (server_default) e `updated_at` (onupdate)
+    - Configuração de banco de dados independente (`local.db`)
+    - `get_session()` com tipo de retorno `AsyncGenerator[AsyncSession, None]`
+  - **Presentation Layer**:
+    - Rotas REST completas: POST `/`, GET `/`, GET `/bairro/{bairro}`, GET `/{local_id}`, PUT `/{local_id}`, DELETE `/{local_id}`
+- **Arquivos criados**:
+  - `local/__init__.py`
+  - `local/src/domain/entities/local.py`
+  - `local/src/domain/repositories/local_repository.py`
+  - `local/src/application/schemas/local_schema.py`
+  - `local/src/application/use_cases/local_use_cases.py`
+  - `local/src/infrastructure/database/config.py`
+  - `local/src/infrastructure/database/models.py`
+  - `local/src/infrastructure/repositories/local_repository_impl.py`
+  - `local/src/presentation/api/routes/local_routes.py`
+  - `docs/ENTIDADE-LOCAL.md`
+- **Arquivos modificados**:
+  - `app.py` — adicionadas importações de `local_routes` e `init_db_local`, inclusão da rota `/api/v1/local` e chamada `init_db_local()` no lifespan
+- **Impacto**: Sistema agora possui gerenciamento completo de locais onde itens são encontrados
+
+### Corrigido
+
+#### 19. Indentação e Estrutura da Entidade Local
+- **Problema**: Arquivo `local.py` da entidade possuía indentação incorreta no docstring, método `__post_init__` fora do escopo da classe e método `atualizar_descricao` aninhado incorretamente dentro de `__post_init__`
+- **Solução**: Reestruturado o arquivo com indentação correta; `__post_init__` e `atualizar_descricao` movidos para dentro da classe
+- **Arquivos**:
+  - `local/src/domain/entities/local.py`
+- **Impacto**: Entidade instanciável e validações de domínio funcionando corretamente
+
+#### 20. Campos Sem Default na Entidade Local
+- **Problema**: Campos `id`, `created_at` e `updated_at` não possuíam valor default, tornando impossível criar instâncias sem informá-los
+- **Solução**: Alterados para `Optional[...] = None` permitindo criação com apenas `tipo`, `descricao` e `bairro`
+- **Arquivos**:
+  - `local/src/domain/entities/local.py`
+- **Impacto**: Criação de locais via POST funciona corretamente sem fornecer `id` ou timestamps
+
+#### 21. Import Incorreto em `local_repository.py`
+- **Problema**: Interface usava `from src.domain.entities.local import Local` (caminho relativo inválido)
+- **Solução**: Corrigido para `from local.src.domain.entities.local import Local`
+- **Arquivos**:
+  - `local/src/domain/repositories/local_repository.py`
+- **Impacto**: Elimina `ModuleNotFoundError` na importação do repositório
+
+#### 22. Nome Incorreto do Arquivo de Repositório
+- **Problema**: Arquivo nomeado `local_repositories.py` (plural) enquanto todos os módulos importavam `local_repository` (singular)
+- **Solução**: Arquivo renomeado para `local_repository.py`
+- **Arquivos**:
+  - `local/src/domain/repositories/local_repository.py` (renomeado de `local_repositories.py`)
+- **Impacto**: Importações funcionam sem `ModuleNotFoundError`
+
+#### 23. Colunas `created_at` e `updated_at` Ausentes no Model ORM
+- **Problema**: `LocalModel` não possuía as colunas de timestamp, mas `LocalResponse` e a entidade esperavam esses campos
+- **Solução**: Adicionadas colunas `created_at` (com `server_default=func.now()`) e `updated_at` (com `onupdate=func.now()`) ao `LocalModel`
+- **Arquivos**:
+  - `local/src/infrastructure/database/models.py`
+- **Impacto**: Respostas da API incluem timestamps corretos; sem mais erros de atributo ao serializar
+
+#### 24. Tipo de Retorno Incorreto em `get_session()`
+- **Problema**: Função geradora assíncrona `get_session()` declarava retorno `-> AsyncSession` mas retorna um generator
+- **Solução**: Alterado para `-> AsyncGenerator[AsyncSession, None]` com import de `AsyncGenerator` do `typing`
+- **Arquivos**:
+  - `local/src/infrastructure/database/config.py`
+- **Impacto**: Elimina erro de tipo e compatibilidade com Dependency Injection do FastAPI
+
+#### 25. Vírgula Faltando e Campo Errado em `_model_to_entity()`
+- **Problema**: Faltava vírgula após `tipo=model.tipo` e o campo `descricao` era mapeado erroneamente como `model.tipo`
+- **Solução**: Adicionada vírgula e corrigido para `descricao=model.descricao`; adicionados `created_at` e `updated_at` ao mapeamento
+- **Arquivos**:
+  - `local/src/infrastructure/repositories/local_repository_impl.py`
+- **Impacto**: Entidades retornadas têm todos os campos corretos
+
+#### 26. Indentação Incorreta e Variável Errada em `get_by_bairro()`
+- **Problema**: Método `get_by_bairro` tinha 5 espaços de indentação (fora do escopo da classe) e usava variável `categoria` inexistente no filtro WHERE
+- **Solução**: Corrigida indentação para 4 espaços e variável trocada para `bairro`
+- **Arquivos**:
+  - `local/src/infrastructure/repositories/local_repository_impl.py`
+- **Impacto**: Método pertence corretamente à classe e busca por bairro retorna resultados corretos
+
+#### 27. Método `count()` Faltando na Implementação
+- **Problema**: Interface `LocalRepository` declarava `count()` como `@abstractmethod` mas `LocalRepositoryImpl` não o implementava, causando erro ao instanciar a classe
+- **Solução**: Implementado `count()` usando `select(func.count()).select_from(LocalModel)`
+- **Arquivos**:
+  - `local/src/infrastructure/repositories/local_repository_impl.py`
+- **Impacto**: Classe pode ser instanciada; endpoint `GET /` retorna o `total` correto na listagem
+
+#### 28. Import `datetime` Faltando no Schema
+- **Problema**: `LocalResponse` usava `datetime` sem importá-lo, causando `NameError`
+- **Solução**: Adicionado `from datetime import datetime` e `from typing import List`
+- **Arquivos**:
+  - `local/src/application/schemas/local_schema.py`
+- **Impacto**: Schema importa e valida corretamente
+
+#### 29. `LocalResponse` Incompleto e `LocalListResponse` Ausente
+- **Problema**: `LocalResponse` não incluía os campos `tipo`, `descricao` e `bairro`; classe `LocalListResponse` não existia mas era usada nas rotas
+- **Solução**: Adicionados os campos faltantes em `LocalResponse`; criada classe `LocalListResponse`
+- **Arquivos**:
+  - `local/src/application/schemas/local_schema.py`
+- **Impacto**: Respostas da API retornam todos os dados do local; endpoint `GET /` funciona sem `NameError`
+
+#### 30. Nomes de Classes Incorretos nos Use Cases
+- **Problema**: `getLocalByIdUseCase` (minúsculo) e `GetItemsByBairroUseCase` (nome errado) não correspondiam ao que as rotas importavam
+- **Solução**: Renomeados para `GetLocalByIdUseCase` e `GetLocalsByBairroUseCase`
+- **Arquivos**:
+  - `local/src/application/use_cases/local_use_cases.py`
+- **Impacto**: Importações nas rotas funcionam sem `ImportError`
+
+#### 31. Múltiplos Erros em `local_routes.py`
+- **Problema**: Arquivo continha diversos erros de importação e lógica:
+  - Import `from local.src.domain.entities.item import Local` (módulo inexistente)
+  - Import `from local.src.infrastructure.repositories.item_repository_impl` (arquivo inexistente)  
+  - `LocalListResponse` não importado
+  - Router com `prefix="/locals"` duplicando o prefixo do `app.include_router()`
+  - Todas as rotas com paths `/locals/xxx` em vez de `/`, `/{local_id}`, etc.
+  - Path param `{local}` no PUT em vez de `{local_id}`
+  - `return update_local` (nome da função) em vez de `return updated_local` (variável)
+  - Indentação incorreta no docstring de `get_all_locals`
+- **Solução**: Corrigidos todos os imports, removido prefixo duplicado, padronizados os paths, corrigido path param e variável de retorno
+- **Arquivos**:
+  - `local/src/presentation/api/routes/local_routes.py`
+- **Impacto**: Todas as rotas da entidade Local respondem nos endpoints corretos sem erros de importação ou execução
+
 ### Corrigido
 
 #### 1. Normalização de Status na Busca
