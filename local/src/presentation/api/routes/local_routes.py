@@ -22,7 +22,7 @@ from local.src.infrastructure.repositories.local_repository_impl import LocalRep
 router = APIRouter(tags=["Locais"])
 
 @router.post("/", response_model=LocalResponse, status_code=status.HTTP_201_CREATED)
-async def create_item(
+async def create_local(
     local_data: LocalCreate,
     session: AsyncSession = Depends(get_session)
 ):
@@ -64,7 +64,7 @@ async def get_all_locals(
     )
 
 @router.get("/bairro/{bairro}", response_model=List[LocalResponse])
-async def get_locals_by_categoria(
+async def get_locals_by_bairro(
     bairro: str,
     session: AsyncSession = Depends(get_session)
 ):
@@ -76,7 +76,7 @@ async def get_locals_by_categoria(
     return locals
 
 @router.get("/{local_id}", response_model=LocalResponse)
-async def get_item(
+async def get_local(
     local_id: int,
     session: AsyncSession = Depends(get_session)
 ):

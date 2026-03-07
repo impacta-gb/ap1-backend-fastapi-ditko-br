@@ -495,6 +495,218 @@ pytest responsavel/tests/integration/test_responsavel_api.py -v
 
 ---
 
+## Entidade: Local
+
+### Testes Unitários
+
+**Arquivo:** `local/tests/unit/test_local_entity.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_local_valido` | Cria local com dados válidos |
+| `test_criar_local_com_id` | Criação simulando objeto do banco |
+| `test_criar_local_sem_tipo` | Valida obrigatoriedade do tipo |
+| `test_criar_local_com_tipo_apenas_espacos` | Valida tipo com apenas espaços |
+| `test_criar_local_sem_descricao` | Valida obrigatoriedade da descrição |
+| `test_criar_local_com_descricao_apenas_espacos` | Valida descrição com apenas espaços |
+| `test_criar_local_sem_bairro` | Valida obrigatoriedade do bairro |
+| `test_criar_local_com_bairro_apenas_espacos` | Valida bairro com apenas espaços |
+| `test_atualizar_descricao_com_sucesso` | Testa método de atualização de descrição |
+| `test_atualizar_descricao_com_valor_vazio_falha` | Valida que descrição vazia lança erro |
+| `test_atualizar_descricao_com_apenas_espacos_falha` | Valida que espaços em branco lançam erro |
+| `test_local_representacao_completa` | Testa instanciação com todos os campos |
+
+**Executar:**
+```bash
+pytest local/tests/unit/test_local_entity.py -v
+```
+
+---
+
+**Arquivo:** `local/tests/unit/test_local_use_cases.py`
+
+#### CreateLocalUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_local_com_sucesso` | Criação válida |
+| `test_criar_local_chama_repositorio` | Garante delegação ao repositório |
+
+#### GetLocalByIdUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_local_existente` | Retorna local encontrado |
+| `test_buscar_local_inexistente` | Retorna None |
+| `test_buscar_local_com_id_invalido` | Valida ID > 0 |
+| `test_buscar_local_com_id_negativo` | Valida ID negativo |
+
+#### GetAllLocalsUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_listar_todos_locais` | Lista com paginação padrão |
+| `test_listar_locais_com_paginacao_customizada` | Testa skip/limit customizado |
+| `test_listar_locais_com_skip_negativo` | Bloqueia skip < 0 |
+| `test_listar_locais_com_limit_zero` | Bloqueia limit ≤ 0 |
+| `test_listar_locais_com_limit_maior_que_1000` | Bloqueia limit > 1000 |
+
+#### UpdateLocalUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_atualizar_local_com_sucesso` | Atualização válida |
+| `test_atualizar_local_inexistente` | Retorna None se não encontrar |
+
+#### DeleteLocalUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_deletar_local_existente` | Exclui local existente |
+| `test_deletar_local_inexistente` | Retorna False |
+
+#### GetLocalsByBairroUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_por_bairro_com_sucesso` | Filtra por bairro |
+| `test_buscar_por_bairro_vazio` | Valida bairro não vazio |
+| `test_buscar_por_bairro_apenas_espacos` | Valida espaços em branco |
+| `test_buscar_por_bairro_sem_resultados` | Retorna lista vazia sem resultados |
+
+**Executar:**
+```bash
+pytest local/tests/unit/test_local_use_cases.py -v
+```
+
+---
+
+**Arquivo:** `local/tests/unit/test_local_schema.py`
+
+| Teste | Schema | Descrição |
+|-------|--------|-----------|
+| `test_criar_schema_com_dados_validos` | LocalCreate | Validação sucesso |
+| `test_schema_com_tipo_vazio_falha` | LocalCreate | Valida tipo |
+| `test_schema_com_descricao_vazia_falha` | LocalCreate | Valida descrição |
+| `test_schema_com_bairro_vazio_falha` | LocalCreate | Valida bairro |
+| `test_schema_com_campo_faltando_falha` | LocalCreate | Campos obrigatórios |
+| `test_schema_serializa_para_dict` | LocalCreate | Serialização dict |
+| `test_schema_serializa_para_json` | LocalCreate | Serialização JSON |
+| `test_update_schema_com_dados_validos` | LocalUpdate | Update válido |
+| `test_update_schema_com_campos_opcionais` | LocalUpdate | Campos opcionais |
+| `test_update_schema_apenas_tipo` | LocalUpdate | Patch parcial tipo |
+| `test_update_schema_apenas_bairro` | LocalUpdate | Patch parcial bairro |
+| `test_update_schema_com_tipo_vazio_falha` | LocalUpdate | Tipo vazio inválido |
+| `test_response_schema_com_todos_campos` | LocalResponse | Serialização |
+| `test_response_schema_sem_id_falha` | LocalResponse | ID obrigatório |
+| `test_response_schema_serializa_para_json` | LocalResponse | JSON serialização |
+| `test_list_response_schema_vazio` | LocalListResponse | Lista vazia |
+| `test_list_response_schema_com_locais` | LocalListResponse | Lista com dados |
+| `test_list_response_schema_paginacao` | LocalListResponse | Paginação |
+
+**Executar:**
+```bash
+pytest local/tests/unit/test_local_schema.py -v
+```
+
+---
+
+### Testes de Integração
+
+**Arquivo:** `local/tests/integration/test_local_repository.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_local` | CRUD: Create |
+| `test_buscar_local_por_id` | CRUD: Read |
+| `test_buscar_local_por_id_inexistente` | Read retorna None |
+| `test_listar_todos_locais` | Lista todos |
+| `test_listar_locais_com_paginacao` | Paginação funcional |
+| `test_atualizar_local` | CRUD: Update |
+| `test_atualizar_local_inexistente` | Update retorna None |
+| `test_deletar_local` | CRUD: Delete |
+| `test_deletar_local_inexistente` | Delete retorna False |
+| `test_buscar_por_bairro` | Filtro bairro |
+| `test_contar_total_de_locais` | Método count() |
+| `test_conversao_model_to_entity` | Conversão ORM ↔ Domain |
+
+**Executar:**
+```bash
+pytest local/tests/integration/test_local_repository.py -v
+```
+
+---
+
+**Arquivo:** `local/tests/integration/test_local_end_to_end.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_fluxo_completo_criar_buscar_atualizar_deletar` | CRUD completo |
+| `test_fluxo_listar_com_paginacao` | Paginação end-to-end |
+| `test_fluxo_buscar_por_bairro` | Filtro bairro |
+| `test_fluxo_validacao_bairro_vazio_na_busca` | Validação bairro vazio |
+| `test_fluxo_validacao_id_invalido_nas_buscas` | Validação IDs |
+| `test_fluxo_skip_negativo_na_listagem` | Validação skip negativo |
+| `test_fluxo_limit_invalido_na_listagem` | Validação limit inválido |
+| `test_fluxo_metodo_entidade_atualizar_descricao` | Método domain |
+| `test_fluxo_contar_total_de_locais` | Count end-to-end |
+| `test_fluxo_buscar_local_inexistente_retorna_none` | Read inexistente |
+| `test_fluxo_deletar_local_inexistente` | Delete inexistente |
+
+**Executar:**
+```bash
+pytest local/tests/integration/test_local_end_to_end.py -v
+```
+
+---
+
+### Testes de API
+
+**Arquivo:** `local/tests/integration/test_local_api.py`
+
+#### POST /api/v1/local
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_criar_local_com_sucesso` | 201 | Cria local válido |
+| `test_criar_local_com_dados_invalidos` | 422 | Valida campos obrigatórios |
+| `test_criar_local_com_tipo_vazio` | 400/422 | Valida tipo não vazio |
+| `test_criar_local_com_descricao_vazia` | 400/422 | Valida descrição não vazia |
+| `test_criar_local_com_bairro_vazio` | 400/422 | Valida bairro não vazio |
+
+#### GET /api/v1/local/{local_id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_buscar_local_existente` | 200 | Retorna local |
+| `test_buscar_local_inexistente` | 404 | Local não encontrado |
+| `test_buscar_local_com_id_string` | 422 | Tipo inválido |
+
+#### GET /api/v1/local
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_listar_todos_locais` | 200 | Lista locais |
+| `test_listar_locais_com_paginacao` | 200 | Paginação |
+| `test_listar_locais_com_skip_negativo` | 400/500 | Valida skip |
+| `test_listar_locais_com_limit_invalido` | 400/500 | Valida limit |
+
+#### PUT /api/v1/local/{local_id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_atualizar_local_com_sucesso` | 200 | Atualiza local |
+| `test_atualizar_local_inexistente` | 404 | Local não encontrado |
+
+#### DELETE /api/v1/local/{local_id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_deletar_local_com_sucesso` | 204/200 | Exclui local |
+| `test_deletar_local_inexistente` | 404 | Local não encontrado |
+
+#### Filtros
+| Teste | Endpoint | Descrição |
+|-------|----------|-----------|
+| `test_buscar_por_bairro` | GET /api/v1/local/bairro/{bairro} | Filtro bairro |
+| `test_buscar_por_bairro_sem_resultados` | GET /api/v1/local/bairro/{bairro} | Lista vazia |
+
+**Executar:**
+```bash
+pytest local/tests/integration/test_local_api.py -v
+```
+
+---
+
 ## Template para Nova Entidade
 
 ### 1. Criar Estrutura
@@ -599,8 +811,10 @@ class TestEntidadeAPI:
 - **Unitários:** 73 (Entidade: 13, Use Cases: 32, Schemas: 28)
 - **Integração:** 44 (Repository: 13, E2E: 10, API: 21)
 
-### Local (Planejado)
-- **Total:** ~80 testes (em desenvolvimento)
+### Local (Implementado)
+- **Total:** 90 testes
+- **Unitários:** 49 (Entidade: 12, Use Cases: 19, Schemas: 18)
+- **Integração:** 41 (Repository: 12, E2E: 11, API: 18)
 
 ### Reclamante (Planejado)
 - **Total:** ~70 testes (em desenvolvimento)
@@ -665,4 +879,4 @@ engine = create_async_engine(
 
 ---
 
-**Última atualização:** Março 2026 - Responsável (117 testes implementados)
+**Última atualização:** Março 2026 - Local (90 testes implementados)

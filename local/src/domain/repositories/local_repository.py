@@ -7,7 +7,7 @@ class LocalRepository(ABC):
 
     @abstractmethod
     async def create(self, local: Local) -> Local:
-        """Cria um novo item no repositório"""
+        """Cria um novo local no repositório"""
         pass
     @abstractmethod
     async def get_by_id(self, local_id: int) -> Optional[Local]:
@@ -15,7 +15,7 @@ class LocalRepository(ABC):
         pass
     @abstractmethod
     async def get_all(self, skip: int = 0, limit: int = 100) -> List[Local]:
-        """Lista todos os itens com paginação"""
+        """Lista todos os locais com paginação"""
         pass
     @abstractmethod
     async def update(self, local_id: int, local:Local) -> Optional[Local]:
@@ -31,5 +31,5 @@ class LocalRepository(ABC):
         self
     @abstractmethod
     async def count(self) -> int:
-        """Conta o total de itens no repositório"""
+        """Conta o total de locais no repositório"""
         pass
