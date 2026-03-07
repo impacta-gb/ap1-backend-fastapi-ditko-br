@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, DateTime, Text
 from sqlalchemy.sql import func
-from item.src.infrastructure.database.config import Base
+from devolucao.src.infrastructure.database.config import Base
 
 
 class DevolucaoModel(Base):
