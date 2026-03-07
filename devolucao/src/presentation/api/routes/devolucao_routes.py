@@ -36,8 +36,8 @@ async def create_devolucao(
     use_case = CreateDevolucaoUseCase(repository)
 
     devolucao = Devolucao(
-        reclamante_id=devolucao_data.id_reclamante,
-        item_id=devolucao_data.id_item,
+        reclamante_id=devolucao_data.reclamante_id,
+        item_id=devolucao_data.item_id,
         observacao=devolucao_data.observacao,
         data_devolucao=devolucao_data.data_devolucao
     )
@@ -128,8 +128,8 @@ async def update_devolucao_full(
 
         updated_entity = Devolucao(
             id=devolucao_id,
-            reclamante_id=devolucao_data.id_reclamante,
-            item_id=devolucao_data.id_item,
+            reclamante_id=devolucao_data.reclamante_id,
+            item_id=devolucao_data.item_id,
             observacao=devolucao_data.observacao,
             data_devolucao=devolucao_data.data_devolucao
         )
@@ -162,8 +162,8 @@ async def update_devolucao_partial(
 
         updated_entity = Devolucao(
             id=devolucao_id,
-            reclamante_id=devolucao_data.id_reclamante if devolucao_data.id_reclamante is not None else existing.reclamante_id,
-            item_id=devolucao_data.id_item if devolucao_data.id_item is not None else existing.item_id,
+            reclamante_id=devolucao_data.reclamante_id if devolucao_data.reclamante_id is not None else existing.reclamante_id,
+            item_id=devolucao_data.item_id if devolucao_data.item_id is not None else existing.item_id,
             observacao=devolucao_data.observacao if devolucao_data.observacao is not None else existing.observacao,
             data_devolucao=devolucao_data.data_devolucao if devolucao_data.data_devolucao is not None else existing.data_devolucao
         )
