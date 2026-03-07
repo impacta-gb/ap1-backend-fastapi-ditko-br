@@ -9,6 +9,104 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+#### 27. Entidade Devolucao com Clean Architecture
+- **Descrição**: Implementação completa da entidade Devolucao seguindo padrões de Clean Architecture (Arquitetura Diplomata)
+- **Componentes**:
+  - **Domain Layer**:
+    - Entidade `Devolucao` com validações de domínio (`reclamante_id` e `item_id` positivos, `observacao` não vazia)
+    - Campo `data_devolucao` com `default_factory=datetime.now` (registra data/hora atual automaticamente)
+    - Método de domínio `atualizar_observacao()` com validação
+    - Interface `DevolucaoRepository` com métodos CRUD + `get_by_data()` + `count()`
+  - **Application Layer**:
+    - Schemas Pydantic: `DevolucaoBase`, `DevolucaoCreate`, `DevolucaoUpdate`, `DevolucaoPatch`, `DevolucaoResponse` (com `created_at`/`updated_at`), `DevolucaoListResponse`
+    - Use Cases: `CreateDevolucaoUseCase`, `GetDevolucaoByIdUseCase`, `GetAllDevolucoesUseCase`, `UpdateDevolucaoUseCase`, `DeleteDevolucaoUseCase`, `GetDevolucoesByDataUseCase`, `CountDevolucoesUseCase`
+    - Regra de negócio: data da devolução não pode ser futura
+  - **Infrastructure Layer**:
+    - `DevolucaoRepositoryImpl` com implementação assíncrona usando SQLAlchemy
+    - `DevolucaoModel` com colunas `created_at` (server_default) e `updated_at` (onupdate)
+    - `get_by_data()` compara apenas a parte da data usando `func.date()`, sem considerar hora
+    - Configuração de banco de dados independente (`devolucao.db`)
+  - **Presentation Layer**:
+    - Rotas REST completas: POST `/`, GET `/`, GET `/data/{data}`, GET `/{id}`, PUT `/{id}`, PATCH `/{id}`, DELETE `/{id}`
+    - PATCH reutiliza `UpdateDevolucaoUseCase` com merge dos campos na camada de apresentação
+- **Arquivos criados**:
+  - `devolucao/__init__.py`
+  - `devolucao/src/domain/entities/devolucao.py`
+  - `devolucao/src/domain/repositories/devolucao_repository.py`
+  - `devolucao/src/application/schemas/devolucao_schema.py`
+  - `devolucao/src/application/use_cases/devolucao_use_cases.py`
+  - `devolucao/src/infrastructure/database/config.py`
+  - `devolucao/src/infrastructure/database/models.py`
+  - `devolucao/src/infrastructure/repositories/devolucao_repository_impl.py`
+  - `devolucao/src/presentation/api/routes/devolucao_routes.py`
+  - `docs/ENTIDADE-DEVOLUCAO.md`
+- **Arquivos modificados**:
+  - `app.py` — adicionadas importações de `devolucao_routes` e `init_db_devolucao`, inclusão da rota `/api/v1/devolucoes` e chamada `init_db_devolucao()` no lifespan
+- **Impacto**: Sistema agora possui gerenciamento completo de devoluções de itens perdidos
+
+### Corrigido
+
+#### 28. `__post_init__` Fora da Classe em `devolucao.py`
+- **Problema**: Método `__post_init__` estava fora do escopo da classe `Devolucao` por indentação incorreta, fazendo com que nunca fosse chamado
+- **Solução**: Método movido para dentro da classe com indentação correta; validações também corrigidas de `if not self.id_x` para `if self.id_x <= 0`
+- **Arquivos**:
+  - `devolucao/src/domain/entities/devolucao.py`
+- **Impacto**: Validações de domínio passam a funcionar corretamente na instanciação
+
+#### 29. `data_devolucao` com Tipo Opcional Contradizendo Validação
+- **Problema**: Campo `data_devolucao` era `Optional[datetime] = None`, mas o `__post_init__` rejeitava `None` gerando erro ao criar com o valor padrão
+- **Solução**: Alterado para `datetime = field(default_factory=datetime.now)` — nunca é `None` e registra a data/hora atual automaticamente
+- **Arquivos**:
+  - `devolucao/src/domain/entities/devolucao.py`
+  - `devolucao/src/application/schemas/devolucao_schema.py`
+- **Impacto**: Criação de devoluções sem informar data funciona corretamente
+
+#### 30. `DevolucaoCreate` e `DevolucaoUpdate` Não Herdando `DevolucaoBase`
+- **Problema**: Ambos os schemas redeclaravam todos os campos em vez de herdar de `DevolucaoBase`, gerando duplicação
+- **Solução**: `DevolucaoCreate` e `DevolucaoUpdate` passaram a herdar de `DevolucaoBase`
+- **Arquivos**:
+  - `devolucao/src/application/schemas/devolucao_schema.py`
+- **Impacto**: Código sem duplicação; mudanças na base refletem automaticamente nos schemas derivados
+
+#### 31. `DevolucaoResponse` sem `created_at` e `updated_at`
+- **Problema**: Schema de resposta não incluía timestamps, diferindo do padrão das demais entidades
+- **Solução**: Adicionados `created_at: datetime` e `updated_at: Optional[datetime] = None` ao `DevolucaoResponse`
+- **Arquivos**:
+  - `devolucao/src/application/schemas/devolucao_schema.py`
+- **Impacto**: Respostas da API incluem timestamps, alinhado com `ItemResponse` e `LocalResponse`
+
+#### 32. `DevolucaoModel` Importando `Base` do Módulo `item`
+- **Problema**: `models.py` da devolução importava `Base` de `item.src.infrastructure.database.config`, fazendo o modelo se registrar no banco `achados_perdidos.db` enquanto `get_session()` consultava `devolucao.db`
+- **Solução**: Corrigido o import para `devolucao.src.infrastructure.database.config`
+- **Arquivos**:
+  - `devolucao/src/infrastructure/database/models.py`
+- **Impacto**: Tabela `devolucoes` criada e consultada no banco correto; eliminado erro 500 nas requisições
+
+#### 33. Referências a Atributos Inexistentes nas Routes
+- **Problema**: Routes referenciavam `devolucao_data.id_reclamante` e `devolucao_data.id_item`, mas o schema usa `reclamante_id` e `item_id`, causando `AttributeError` e erro 500
+- **Solução**: Todas as ocorrências nos endpoints POST, PUT e PATCH corrigidas para os nomes corretos
+- **Arquivos**:
+  - `devolucao/src/presentation/api/routes/devolucao_routes.py`
+- **Impacto**: Endpoints de criação e atualização de devolução funcionam corretamente
+
+#### 34. `DeleteDevolucaoUseCase` sem Chamar `repository.delete()`
+- **Problema**: O use case buscava a devolução, verificava existência, mas não chamava `repository.delete()`, nunca removendo o registro
+- **Solução**: Adicionado `return await self.repository.delete(devolucao_id)`
+- **Arquivos**:
+  - `devolucao/src/application/use_cases/devolucao_use_cases.py`
+- **Impacto**: Endpoint DELETE passa a remover os registros corretamente
+
+#### 35. `get_all()` Incompleto no Repositório de Devolucao
+- **Problema**: Método `get_all()` estava declarado mas sem implementação; métodos `update()`, `delete()`, `get_by_data()` e `count()` estavam completamente ausentes
+- **Solução**: Todos os métodos implementados seguindo o padrão de `ItemRepositoryImpl`
+- **Arquivos**:
+  - `devolucao/src/infrastructure/repositories/devolucao_repository_impl.py`
+- **Impacto**: Todas as operações CRUD e de consulta funcionam corretamente
+
+---
+
+### Adicionado (anterior)
+
 #### 18. Entidade Local com Clean Architecture
 - **Descrição**: Implementação completa da entidade Local seguindo padrões de Clean Architecture (Arquitetura Diplomata)
 - **Componentes**:
