@@ -707,6 +707,243 @@ pytest local/tests/integration/test_local_api.py -v
 
 ---
 
+## Entidade: Devolução
+
+### Testes Unitários
+
+**Arquivo:** `devolucao/tests/unit/test_devolucao_entity.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_devolucao_valida` | Cria devolução com dados válidos |
+| `test_criar_devolucao_com_id` | Criação simulando objeto do banco |
+| `test_criar_devolucao_com_data_devolucao` | Verifica data_devolucao customizada |
+| `test_criar_devolucao_com_datas_de_auditoria` | Verifica campos created_at/updated_at |
+| `test_criar_devolucao_com_reclamante_id_negativo` | Valida reclamante_id negativo |
+| `test_criar_devolucao_com_reclamante_id_zero` | Valida reclamante_id zero |
+| `test_criar_devolucao_com_item_id_negativo` | Valida item_id negativo |
+| `test_criar_devolucao_com_item_id_zero` | Valida item_id zero |
+| `test_criar_devolucao_sem_observacao` | Valida obrigatoriedade da observação |
+| `test_criar_devolucao_com_observacao_apenas_espacos` | Valida observação com apenas espaços |
+| `test_atualizar_observacao_com_sucesso` | Testa método atualizar_observacao |
+| `test_atualizar_observacao_com_valor_vazio_falha` | Valida que observação vazia lança erro |
+| `test_atualizar_observacao_com_apenas_espacos_falha` | Valida que espaços em branco lançam erro |
+| `test_devolucao_representacao_completa` | Testa instanciação com todos os campos |
+
+**Executar:**
+```bash
+pytest devolucao/tests/unit/test_devolucao_entity.py -v
+```
+
+---
+
+**Arquivo:** `devolucao/tests/unit/test_devolucao_use_cases.py`
+
+#### CreateDevolucaoUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_devolucao_com_sucesso` | Criação válida |
+| `test_criar_devolucao_com_data_futura_falha` | Bloqueia data futura |
+| `test_criar_devolucao_com_reclamante_id_invalido_falha` | Valida reclamante_id > 0 |
+| `test_criar_devolucao_com_item_id_invalido_falha` | Valida item_id > 0 |
+
+#### GetDevolucaoByIdUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_por_id_existente` | Retorna devolução encontrada |
+| `test_buscar_por_id_inexistente` | Retorna None |
+| `test_buscar_por_id_invalido_falha` | Valida ID > 0 |
+| `test_buscar_por_id_negativo_falha` | Valida ID negativo |
+
+#### GetAllDevolucoesUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_listar_com_paginacao_padrao` | Lista com paginação padrão |
+| `test_listar_com_skip_negativo_falha` | Bloqueia skip < 0 |
+| `test_listar_com_limit_zero_falha` | Bloqueia limit ≤ 0 |
+| `test_listar_com_limit_acima_do_maximo_falha` | Bloqueia limit > 1000 |
+| `test_listar_com_paginacao_customizada` | Testa skip/limit customizado |
+| `test_listar_com_limit_maximo_permitido` | Testa limit = 1000 |
+
+#### UpdateDevolucaoUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_atualizar_devolucao_existente` | Atualização válida |
+| `test_atualizar_devolucao_inexistente_retorna_none` | Retorna None se não encontrar |
+| `test_atualizar_com_data_futura_falha` | Bloqueia data futura |
+
+#### DeleteDevolucaoUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_deletar_devolucao_existente` | Exclui devolução existente |
+| `test_deletar_devolucao_inexistente_retorna_false` | Retorna False |
+| `test_deletar_com_id_invalido_falha` | Valida ID > 0 |
+| `test_deletar_com_id_negativo_falha` | Valida ID negativo |
+
+#### GetDevolucoesByDataUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_por_data_com_sucesso` | Filtra por data |
+| `test_buscar_por_data_nula_falha` | Valida data não nula |
+| `test_buscar_por_data_sem_resultados` | Retorna lista vazia |
+
+#### CountDevolucoesUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_contar_total_com_registros` | Retorna contagem correta |
+| `test_contar_total_sem_registros` | Retorna zero |
+
+**Executar:**
+```bash
+pytest devolucao/tests/unit/test_devolucao_use_cases.py -v
+```
+
+---
+
+**Arquivo:** `devolucao/tests/unit/test_devolucao_schema.py`
+
+| Teste | Schema | Descrição |
+|-------|--------|-----------|
+| `test_criar_schema_com_dados_validos` | DevolucaoCreate | Validação sucesso |
+| `test_schema_com_reclamante_id_zero_falha` | DevolucaoCreate | Valida reclamante_id |
+| `test_schema_com_reclamante_id_negativo_falha` | DevolucaoCreate | Valida negativo |
+| `test_schema_com_item_id_zero_falha` | DevolucaoCreate | Valida item_id |
+| `test_schema_com_item_id_negativo_falha` | DevolucaoCreate | Valida negativo |
+| `test_schema_com_observacao_vazia_falha` | DevolucaoCreate | Valida observação |
+| `test_schema_com_campo_faltando_falha` | DevolucaoCreate | Campos obrigatórios |
+| `test_schema_data_devolucao_default` | DevolucaoCreate | Default data_devolucao |
+| `test_schema_serializa_para_dict` | DevolucaoCreate | Serialização dict |
+| `test_schema_serializa_para_json` | DevolucaoCreate | Serialização JSON |
+| `test_update_schema_com_dados_validos` | DevolucaoUpdate | Update válido |
+| `test_update_schema_com_reclamante_id_invalido_falha` | DevolucaoUpdate | Valida reclamante_id |
+| `test_patch_schema_com_apenas_observacao` | DevolucaoPatch | Patch parcial |
+| `test_patch_schema_com_apenas_reclamante_id` | DevolucaoPatch | Patch reclamante_id |
+| `test_patch_schema_com_todos_campos` | DevolucaoPatch | Patch completo |
+| `test_patch_schema_vazio` | DevolucaoPatch | Patch sem campos |
+| `test_patch_schema_com_reclamante_id_invalido_falha` | DevolucaoPatch | Valida ID inválido |
+| `test_response_schema_com_todos_campos` | DevolucaoResponse | Serialização |
+| `test_response_schema_sem_id_falha` | DevolucaoResponse | ID obrigatório |
+| `test_response_schema_serializa_para_json` | DevolucaoResponse | JSON serialização |
+| `test_list_response_schema_vazio` | DevolucaoListResponse | Lista vazia |
+| `test_list_response_schema_com_devolucoes` | DevolucaoListResponse | Lista com dados |
+| `test_list_response_schema_paginacao` | DevolucaoListResponse | Paginação |
+
+**Executar:**
+```bash
+pytest devolucao/tests/unit/test_devolucao_schema.py -v
+```
+
+---
+
+### Testes de Integração
+
+**Arquivo:** `devolucao/tests/integration/test_devolucao_repository.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_devolucao` | CRUD: Create |
+| `test_buscar_devolucao_por_id` | CRUD: Read |
+| `test_buscar_devolucao_por_id_inexistente` | Read retorna None |
+| `test_listar_todas_devolucoes` | Lista todos |
+| `test_listar_devolucoes_com_paginacao` | Paginação funcional |
+| `test_atualizar_devolucao` | CRUD: Update |
+| `test_atualizar_devolucao_inexistente` | Update retorna None |
+| `test_deletar_devolucao` | CRUD: Delete |
+| `test_deletar_devolucao_inexistente` | Delete retorna False |
+| `test_buscar_por_data` | Filtro data |
+| `test_contar_total_devolucoes` | Método count() |
+| `test_conversao_model_to_entity` | Conversão ORM ↔ Domain |
+
+**Executar:**
+```bash
+pytest devolucao/tests/integration/test_devolucao_repository.py -v
+```
+
+---
+
+**Arquivo:** `devolucao/tests/integration/test_devolucao_end_to_end.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_fluxo_completo_criar_buscar_atualizar_deletar` | CRUD completo |
+| `test_fluxo_listar_com_paginacao` | Paginação end-to-end |
+| `test_fluxo_buscar_por_data` | Filtro data |
+| `test_fluxo_validacao_data_nula_na_busca` | Validação data nula |
+| `test_fluxo_validacao_id_invalido_nas_buscas` | Validação IDs |
+| `test_fluxo_skip_negativo_na_listagem` | Validação skip negativo |
+| `test_fluxo_limit_invalido_na_listagem` | Validação limit inválido |
+| `test_fluxo_metodo_entidade_atualizar_observacao` | Método domain |
+| `test_fluxo_contar_total_de_devolucoes` | Count end-to-end |
+| `test_fluxo_buscar_devolucao_inexistente_retorna_none` | Read inexistente |
+| `test_fluxo_deletar_devolucao_inexistente` | Delete inexistente |
+| `test_fluxo_data_futura_ao_criar_falha` | Regra de negócio data futura |
+
+**Executar:**
+```bash
+pytest devolucao/tests/integration/test_devolucao_end_to_end.py -v
+```
+
+---
+
+### Testes de API
+
+**Arquivo:** `devolucao/tests/integration/test_devolucao_api.py`
+
+#### POST /api/v1/devolucoes
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_criar_devolucao_com_sucesso` | 201 | Cria devolução válida |
+| `test_criar_devolucao_com_dados_invalidos` | 422 | Valida campos obrigatórios |
+| `test_criar_devolucao_com_reclamante_id_invalido` | 400/422 | Valida reclamante_id |
+| `test_criar_devolucao_com_item_id_invalido` | 400/422 | Valida item_id |
+| `test_criar_devolucao_com_data_futura` | 400/500 | Bloqueia data futura |
+
+#### GET /api/v1/devolucoes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_buscar_devolucao_existente` | 200 | Retorna devolução |
+| `test_buscar_devolucao_inexistente` | 404 | Não encontrada |
+| `test_buscar_devolucao_com_id_string` | 422 | Tipo inválido |
+
+#### GET /api/v1/devolucoes
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_listar_todas_devolucoes` | 200 | Lista devoluções |
+| `test_listar_devolucoes_com_paginacao` | 200 | Paginação |
+| `test_listar_devolucoes_com_skip_negativo` | 400/500 | Valida skip |
+| `test_listar_devolucoes_com_limit_invalido` | 400/500 | Valida limit |
+
+#### PUT /api/v1/devolucoes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_atualizar_devolucao_com_sucesso` | 200 | Atualiza devolução |
+| `test_atualizar_devolucao_inexistente` | 404 | Não encontrada |
+
+#### PATCH /api/v1/devolucoes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_patch_devolucao_com_sucesso` | 200 | Atualização parcial |
+| `test_patch_devolucao_inexistente` | 404 | Não encontrada |
+
+#### DELETE /api/v1/devolucoes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_deletar_devolucao_com_sucesso` | 204/200 | Exclui devolução |
+| `test_deletar_devolucao_inexistente` | 404 | Não encontrada |
+
+#### GET /api/v1/devolucoes/data/{data}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_buscar_por_data_com_resultados` | 200 | Filtra por data |
+| `test_buscar_por_data_sem_resultados` | 200 | Lista vazia |
+
+**Executar:**
+```bash
+pytest devolucao/tests/integration/test_devolucao_api.py -v
+```
+
+---
+
 ## Template para Nova Entidade
 
 ### 1. Criar Estrutura
@@ -816,11 +1053,13 @@ class TestEntidadeAPI:
 - **Unitários:** 49 (Entidade: 12, Use Cases: 19, Schemas: 18)
 - **Integração:** 41 (Repository: 12, E2E: 11, API: 18)
 
+### Devolução (Implementado)
+- **Total:** 107 testes
+- **Unitários:** 52 (Entidade: 15, Use Cases: 25, Schemas: 12)
+- **Integração:** 55 (Repository: 13, E2E: 12, API: 20)
+
 ### Reclamante (Planejado)
 - **Total:** ~70 testes (em desenvolvimento)
-
-### Devolução (Planejado)
-- **Total:** ~90 testes (em desenvolvimento)
 
 ---
 
@@ -879,4 +1118,4 @@ engine = create_async_engine(
 
 ---
 
-**Última atualização:** Março 2026 - Local (90 testes implementados)
+**Última atualização:** Março 2026 - Devolução (107 testes implementados)
