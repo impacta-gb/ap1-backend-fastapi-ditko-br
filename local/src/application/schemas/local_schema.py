@@ -3,7 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 class LocalBase(BaseModel):
-    """Schema base para item"""
+    """Schema base para local"""
     tipo: str = Field(..., min_length = 1, max_length = 255, description = "Tipo do local")
     descricao: str = Field(..., min_length = 1, max_length = 255, description = "Descrição do local")
     bairro: str = Field(..., min_length = 1, max_length = 255, description = "Bairro onde foi encontrado")

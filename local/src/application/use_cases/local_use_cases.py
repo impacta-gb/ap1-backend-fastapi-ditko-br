@@ -50,14 +50,11 @@ class UpdateLocalUseCase:
     
     async def execute(self, local_id: int, local: Local) -> Optional[Local]:
         
-        # Busca o item atual para comparar
+        # Busca o local atual para verificar existência
         existing_local = await self.repository.get_by_id(local_id)
         
         if not existing_local:
             return None
-        
-        # Regra de negócio: Não pode marcar como devolvido diretamente pelo update
-        
         
         return await self.repository.update(local_id, local)
 
@@ -69,26 +66,23 @@ class DeleteLocalUseCase:
     
     async def execute(self, local_id: int) -> bool:
         
-        # Busca o Local para verificar o status
+        # Busca o local para verificar existência
         local = await self.repository.get_by_id(local_id)
         
         if not local:
             return False
         
-        # Regra de negócio: Não pode deletar local devolvido (preservar histórico)
-
-        
         return await self.repository.delete(local_id)
 
 class GetLocalsByBairroUseCase:
-    """Caso de uso para buscar itens por bairro"""
+    """Caso de uso para buscar locais por bairro"""
     
     def __init__(self, repository: LocalRepository):
         self.repository = repository
     
     async def execute(self, bairro: str) -> List[Local]:
-        """Executa a busca de itens por bairro"""
+        """Executa a busca de locais por bairro"""
         if not bairro or len(bairro.strip()) == 0:
-            raise ValueError("Bairro não pode estar vazi0")
+            raise ValueError("Bairro não pode estar vazio")
         
         return await self.repository.get_by_bairro(bairro)
