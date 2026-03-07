@@ -10,16 +10,16 @@ class Devolucao:
 
     Attributes:
         id: Identificador único da devolução.
-        id_reclamante: ID do reclamante.
-        id_item: ID do item devolvido.
+        reclamante_id: ID do reclamante.
+        item_id: ID do item devolvido.
         observacao: Observação sobre a devolução.
         data_devolucao: Data da devolução.
         created_at: Data de criação do registro.
         updated_at: Data da última atualização do registro.
     """
 
-    id_reclamante: int
-    id_item: int
+    reclamante_id: int
+    item_id: int
     observacao: str
     data_devolucao: datetime = field(default_factory=datetime.now)
     id: Optional[int] = None
@@ -28,9 +28,9 @@ class Devolucao:
 
     def __post_init__(self):
         """Validação pós-inicialização do objeto Devolucao."""
-        if self.id_reclamante <= 0:
+        if self.reclamante_id <= 0:
             raise ValueError("O ID do reclamante deve ser um número positivo.")
-        if self.id_item <= 0:
+        if self.item_id <= 0:
             raise ValueError("O ID do item deve ser um número positivo.")
         if not self.observacao or len(self.observacao.strip()) == 0:
             raise ValueError("A observação é obrigatória.")
