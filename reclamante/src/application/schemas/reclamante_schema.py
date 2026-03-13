@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -32,8 +31,8 @@ class ReclamanteResponse(ReclamanteBase):
 
 
 class ReclamanteListResponse(BaseModel):
-    """Schema de resposta para lista de itens"""
-    items: list[ReclamanteResponse]
+    """Schema de resposta para lista de reclamantes"""
+    reclamantes: list[ReclamanteResponse]
     total: int
     skip: int
     limit: int
