@@ -7,6 +7,75 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não Lançado]
 
+### Adicionado — 13 de Março de 2026
+
+#### 36. Entidade Reclamante com Clean Architecture
+- **Descrição**: Implementação completa da entidade Reclamante seguindo padrões de Clean Architecture (Arquitetura Diplomata)
+- **Componentes**:
+  - **Domain Layer**:
+    - Entidade `Reclamante` com validações de domínio (nome, telefone e documento não podem ser vazios)
+    - Método de domínio `atualizar_telefone()` com validação
+    - Interface `ReclamanteRepository` com métodos CRUD + `count()`
+  - **Application Layer**:
+    - Schemas Pydantic: `ReclamanteBase`, `ReclamanteCreate`, `ReclamanteUpdate`, `ReclamanteResponse`, `ReclamanteListResponse`
+    - Use Cases: `CreateReclamanteUseCase`, `GetReclamanteByIdUseCase`, `GetAllReclamantesUseCase`, `UpdateReclamanteUseCase`, `DeleteReclamanteUseCase`
+  - **Infrastructure Layer**:
+    - `ReclamanteRepositoryImpl` com implementação assíncrona usando SQLAlchemy
+    - `ReclamanteModel` com colunas `id`, `nome`, `documento` e `telefone` (todos indexados)
+    - Configuração de banco de dados independente (`reclamante.db`)
+  - **Presentation Layer**:
+    - Rotas REST: POST `/`, GET `/`, GET `/{reclamante_id}`, PUT `/{reclamante_id}`, DELETE `/{reclamante_id}`
+- **Arquivos criados**:
+  - `reclamante/__init__.py`
+  - `reclamante/src/domain/entities/reclamante.py`
+  - `reclamante/src/domain/repositories/reclamante_repository.py`
+  - `reclamante/src/application/schemas/reclamante_schema.py`
+  - `reclamante/src/application/use_cases/reclamante_use_cases.py`
+  - `reclamante/src/infrastructure/database/config.py`
+  - `reclamante/src/infrastructure/database/models.py`
+  - `reclamante/src/infrastructure/repositories/reclamante_repository_impl.py`
+  - `reclamante/src/presentation/api/routes/reclamante_routes.py`
+  - `docs/ENTIDADE-RECLAMANTE.md`
+- **Arquivos modificados**:
+  - `app.py` — adicionadas importações de `reclamante_routes` e `init_db_reclamante`, inclusão da rota `/api/v1/reclamantes` e chamada `init_db_reclamante()` no lifespan
+- **Impacto**: Sistema agora possui gerenciamento completo de reclamantes (pessoas que reivindicam itens perdidos)
+
+### Corrigido — 13 de Março de 2026
+
+#### 37. Múltiplos Erros na Implementação Inicial de Reclamante
+- **Problema**: A implementação inicial continha vários erros que impediam o funcionamento do módulo:
+  - Nomes incorretos na entidade e nos casos de uso
+  - Método `count()` ausente na implementação concreta do repositório
+  - Parâmetros incorretos nos métodos da interface
+  - Variável errada nos schemas (`nome_reclamante` em vez de `nome`)
+  - Arquivo `reclamante_repository_impl.py` duplicado dentro de `routes/`
+- **Solução**: Todos os erros corrigidos em commits sucessivos no branch `feat/entidade-reclamante`
+- **Arquivos**:
+  - `reclamante/src/domain/entities/reclamante.py`
+  - `reclamante/src/domain/repositories/reclamante_repository.py`
+  - `reclamante/src/application/schemas/reclamante_schema.py`
+  - `reclamante/src/application/use_cases/reclamante_use_cases.py`
+  - `reclamante/src/infrastructure/repositories/reclamante_repository_impl.py`
+  - `reclamante/src/presentation/api/routes/reclamante_routes.py`
+- **Impacto**: Módulo reclamante funcional com todos os endpoints operando corretamente
+
+#### 38. `ReclamanteUpdate` com Campos Opcionais Inconsistente com PUT
+- **Problema**: Schema `ReclamanteUpdate` declarava `nome`, `telefone` e `documento` como `Optional`, mas a rota PUT recriava a entidade completa — campos ausentes causariam falha na validação da entidade de domínio
+- **Solução**: `ReclamanteUpdate` alterado para herdar de `ReclamanteBase`, tornando todos os campos obrigatórios e consistentes com a semântica de substituição completa do PUT
+- **Arquivos**:
+  - `reclamante/src/application/schemas/reclamante_schema.py`
+- **Impacto**: Contrato do endpoint PUT agora é claro e correto — qualquer requisição sem um dos três campos retorna HTTP 422
+
+#### 39. Arquivos `__pycache__` Rastreados pelo Git
+- **Problema**: Dois arquivos `.pyc` do módulo reclamante foram adicionados ao índice do Git num commit anterior, mesmo com `.gitignore` já configurado corretamente para ignorá-los
+- **Solução**: Arquivos removidos do índice com `git rm --cached`
+- **Arquivos**:
+  - `reclamante/src/presentation/api/routes/__pycache__/__init__.cpython-314.pyc`
+  - `reclamante/src/presentation/api/routes/__pycache__/reclamante_routes.cpython-314.pyc`
+- **Impacto**: Repositório não versiona mais arquivos de cache Python
+
+---
+
 ### Adicionado
 
 #### 27. Entidade Devolucao com Clean Architecture
