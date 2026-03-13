@@ -2,11 +2,11 @@ from typing import List, Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from reclamante.src.domain.entities.reclamante import Reclamante
-from reclamante.src.domain.repositories.reclamantel_repository import ReclamanteRepository
+from reclamante.src.domain.repositories.reclamante_repository import ReclamanteRepository
 from reclamante.src.infrastructure.database.models import ReclamanteModel
 
-class LocalRepositoryImpl(LocalRepository):
-    """Implementação concreta do repositório de locais usando SQLAlchemy"""
+class ReclamanteRepositoryImpl(ReclamanteRepository):
+    """Implementação concreta do repositório de reclamantes usando SQLAlchemy"""
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -14,7 +14,7 @@ class LocalRepositoryImpl(LocalRepository):
     def _model_to_entity(self, model: ReclamanteModel) -> Reclamante:
         """Converte um modelo SQLAlchemy em entidade de dominio"""
 
-        return Local(
+        return Reclamante(
             id=model.id,
             nome=model.nome,
             documento=model.documento,
@@ -24,7 +24,7 @@ class LocalRepositoryImpl(LocalRepository):
     def _entity_to_model(self, entity: Reclamante) -> ReclamanteModel:
         """Converte uma entidade de dominio em modelo SQLAlchemy"""
 
-        return LocalModel(
+        return ReclamanteModel(
             id=entity.id,
             nome = entity.nome,
             documento = entity.documento,
@@ -86,3 +86,9 @@ class LocalRepositoryImpl(LocalRepository):
         await self.session.delete(model)
         await self.session.commit()
         return True
+    
+    async def count(self) -> int:
+        """Retorna a contagem total de reclamantes no repositório"""
+        result = await self.session.execute(select(func.count(ReclamanteModel.id)))
+        return result.scalar()
+    
