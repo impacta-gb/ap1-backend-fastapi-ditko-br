@@ -1,92 +1,136 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
-
-from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from reclamante.src.application.schemas.reclamante_schema import (
+    ReclamanteCreate,
+    ReclamanteResponse,
+    ReclamanteUpdate,
+    ReclamanteListResponse
+)
+from reclamante.src.application.use_cases.reclamante_use_cases import (
+    CreateReclamanteUseCase,
+    GetReclamanteByIdUseCase,
+    GetAllReclamantesUseCase,
+    UpdateReclamanteUseCase,
+    DeleteReclamanteUseCase,
+)
 from reclamante.src.domain.entities.reclamante import Reclamante
-from reclamante.src.domain.repositories.reclamante_repository import ReclamanteRepository
-from reclamante.src.infrastructure.database.models import ReclamanteModel
+from reclamante.src.infrastructure.database.config import get_session
+from reclamante.src.infrastructure.repositories.reclamante_repository_impl import ReclamanteRepositoryImpl
 
 router = APIRouter(tags=["Reclamantes"])
 
+@router.post("/",
+             response_model=ReclamanteResponse, status_code=status.HTTP_201_CREATED)
+async def create_reclamante(
+    reclamante_data: ReclamanteCreate,
+    session: AsyncSession = Depends(get_session)
+):
+    """Cria um novo reclamante"""
+    repository = ReclamanteRepositoryImpl(session)
+    use_case = CreateReclamanteUseCase(repository)
 
-class ReclamanteRepositoryImpl(ReclamanteRepository):
-    """Implementação concreta do repositório de reclamantes usando SQLAlchemy"""
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    reclamante = Reclamante(
+        nome=reclamante_data.nome,
+        telefone=reclamante_data.telefone,
+        documento=reclamante_data.documento
+    )
 
-    def _model_to_entity(self, model: ReclamanteModel) -> Reclamante:
-        """Converte um modelo SQLAlchemy em entidade de dominio"""
+    try:
+        created_reclamante = await use_case.execute(reclamante)
+        return created_reclamante
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+@router.get("/",
+            response_model=ReclamanteListResponse)
+async def get_all_reclamantes(
+    skip: int = 0,
+    limit: int = 100,
+    session: AsyncSession = Depends(get_session)
+):
+    """Lista todos os reclamantes com paginação"""
+    repository = ReclamanteRepositoryImpl(session)
+    use_case = GetAllReclamantesUseCase(repository)
 
-        return Local(
-            id=model.id,
-            nome=model.nome,
-            documento=model.documento,
-            telefone=model.telefone,
-            
+    reclamantes = await use_case.execute(skip, limit)
+    total = await repository.count()
+
+    return ReclamanteListResponse(
+        reclamantes=reclamantes,
+        total=total,
+        skip=skip,
+        limit=limit
+    )
+
+
+@router.get("/{reclamante_id}",
+            response_model=ReclamanteResponse)
+async def get_reclamante(
+    reclamante_id: int,
+    session: AsyncSession = Depends(get_session)
+):
+    """Busca um reclamante por ID"""
+    repository = ReclamanteRepositoryImpl(session)
+    use_case = GetReclamanteByIdUseCase(repository)
+
+    reclamante = await use_case.execute(reclamante_id)
+
+    if not reclamante:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Reclamante com ID {reclamante_id} não encontrado'
         )
-    def _entity_to_model(self, entity: Reclamante) -> ReclamanteModel:
-        """Converte uma entidade de dominio em modelo SQLAlchemy"""
+    
+    return reclamante
 
-        return LocalModel(
-            id=entity.id,
-            nome = entity.nome,
-            documento = entity.documento,
-            telefone = entity.telefone
-        )
-    async def create(self, reclamante: Reclamante) -> Reclamante:
-        """Cria um novo reclamante no banco de dados"""
-        model = self._entity_to_model(reclamante)
-        self.session.add(model)
-        await self.session.commit()
-        await self.session.refresh(model)
-        return self._model_to_entity(model)
 
-    async def get_by_id(self, id: int) -> Optional[Reclamante]:
-        """Busca um reclamante por ID"""
-        result = await self.session.execute(
-            select(ReclamanteModel).where(ReclamanteModel.id == id)
-        )
-        model = result.scalar_one_or_none()
-        return self._model_to_entity(model) if model else None
+@router.put("/{reclamante_id}", response_model=ReclamanteResponse)
+async def update_reclamante(
+    reclamante_id: int,
+    reclamante_data: ReclamanteUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    """Atualiza um reclamante existente"""
+    repository = ReclamanteRepositoryImpl(session)
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Reclamante]:
-        """Lista todos os reclamantes com paginação"""
-        result = await self.session.execute(
-            select(ReclamanteModel).offset(skip).limit(limit)
-        )
-        models = result.scalars().all()
-        return [self._model_to_entity(model) for model in models]
+    try:
+        get_use_case = GetReclamanteByIdUseCase(repository)
+        existing_reclamante = await get_use_case.execute(reclamante_id)
 
-    async def update(self, id: int, reclamante: Reclamante) -> Optional[Reclamante]:
-        """Atualiza um reclamante existente"""
-        result = await self.session.execute(
-            select(ReclamanteModel).where(ReclamanteModel.id == id)
-        )
-        model = result.scalar_one_or_none()
+        if not existing_reclamante:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'Reclamante com ID {reclamante_id} não encontrado'
+            )
         
-        if not model:
-            return None
-        
-        model.nome = reclamante.nome
-        model.documento = reclamante.documento
-        model.telefone = reclamante.telefone
-        
-        await self.session.commit()
-        await self.session.refresh(model)
-        return self._model_to_entity(model)
+        updated_reclamante_entity = Reclamante(id=reclamante_id,                      nome=reclamante_data.nome,            telefone=reclamante_data.telefone,            documento=reclamante_data.documento)
 
+        update_use_case = UpdateReclamanteUseCase(repository)
+        updated_reclamante = await update_use_case.execute(reclamante_id, updated_reclamante_entity)
 
-    async def delete(self, id: int) -> bool:
-        """Remove um reclamante do banco de dados"""
-        result = await self.session.execute(
-            select(ReclamanteModel).where(ReclamanteModel.id == id)
+        return updated_reclamante
+    
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+
+@router.delete("/{reclamante_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_reclamante(
+    reclamante_id: int,
+    session: AsyncSession = Depends(get_session)
+):
+    """Remove um reclamante"""
+
+    repositoy = ReclamanteRepositoryImpl(session)
+    use_case = DeleteReclamanteUseCase(repositoy)
+
+    deleted = await use_case.execute(reclamante_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Reclamante com ID {reclamante_id} não encontrado'
         )
-        model = result.scalar_one_or_none()
-        
-        if not model:
-            return False
-        
-        await self.session.delete(model)
-        await self.session.commit()
-        return True
+    
+    return None
