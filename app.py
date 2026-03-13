@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     await init_db_responsavel()
     await init_db_local()
     await init_db_devolucao()
-    await init_db_responsavel()
+    await init_db_reclamante()
     yield
 
 app = FastAPI(
