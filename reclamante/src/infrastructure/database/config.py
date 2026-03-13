@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import declarative_base
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./local.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./reclamante.db")
 
 
 engine = create_async_engine(
