@@ -1,5 +1,4 @@
 from typing import List, Optional
-from datetime import datetime
 from reclamante.src.domain.entities.reclamante import Reclamante
 from reclamante.src.domain.repositories.reclamante_repository import ReclamanteRepository
 
@@ -43,17 +42,17 @@ class GetAllReclamantesUseCase:
         return await self.repository.get_all(skip, limit)
 
 class UpdateReclamanteUseCase:
-    """Caso de uso para atualizar um local"""
+    """Caso de uso para atualizar um reclamante"""
     
     def __init__(self, repository: ReclamanteRepository):
         self.repository = repository
     
     async def execute(self, id: int, reclamante: Reclamante) -> Optional[Reclamante]:
         
-        # Busca o local atual para verificar existência
+        # Busca o reclamante atual para verificar existência
         existing_reclamante = await self.repository.get_by_id(id)
         
-        if not existing_local:
+        if not existing_reclamante:
             return None
         
         return await self.repository.update(id, reclamante)
@@ -66,7 +65,7 @@ class DeleteReclamanteUseCase:
     
     async def execute(self, id: int) -> bool:
         
-        # Busca o local para verificar existência
+        # Busca o reclamante para verificar existência
         reclamante = await self.repository.get_by_id(id)
         
         if not reclamante:
