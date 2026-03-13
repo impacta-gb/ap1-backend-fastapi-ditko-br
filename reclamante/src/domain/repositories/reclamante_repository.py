@@ -7,7 +7,7 @@ class ReclamanteRepository(ABC):
     """Interface do repositório de reclamantes (Port)"""
     
     @abstractmethod
-    async def create(self, item: Reclamante) -> Reclamante:
+    async def create(self, reclamante: Reclamante) -> Reclamante:
         """Cria um novo reclamante no repositório"""
         pass
     
@@ -22,12 +22,12 @@ class ReclamanteRepository(ABC):
         pass
     
     @abstractmethod
-    async def update(self, item_id: int, item: Reclamante) -> Optional[Reclamante]:
+    async def update(self, reclamante_id: int, reclamante: Reclamante) -> Optional[Reclamante]:
         """Atualiza um reclamante existente"""
         pass
     
     @abstractmethod
-    async def delete(self, item_id: int) -> bool:
+    async def delete(self, reclamante_id: int) -> bool:
         """Remove um reclamante do repositório"""
         pass
     
