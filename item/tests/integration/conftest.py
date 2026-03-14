@@ -4,8 +4,10 @@ Configurações e fixtures para testes de integração
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from src.infrastructure.database.config import Base
-from src.infrastructure.database.models import ItemModel
+
+# Importa a Base e o modelo para que a tabela seja reconhecida
+from item.src.infrastructure.database.config import Base
+from item.src.infrastructure.database.models import ItemModel
 
 
 # URL do banco de dados de teste (usa SQLite em memória)

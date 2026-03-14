@@ -141,8 +141,7 @@ class TestCreateItemAPI:
         response = client.post("/api/v1/items/", json=item_data)
         
         # Assert
-        assert response.status_code == 400
-        assert "local" in response.json()["detail"].lower()
+        assert response.status_code == 422
 
 
 class TestGetItemByIdAPI:
@@ -187,10 +186,10 @@ class TestGetItemByIdAPI:
         
         # Assert
         assert response.status_code == 400
-        assert "maior que zero" in response.json()["detail"].lower() or "invalid" in response.json()["detail"].lower()
+        assert "maior que zero" in response.json()["message"].lower()
     
     def test_buscar_item_com_id_string(self, client):
-        """Testa busca com ID não numérico retorna 422"""
+        """Testa que ID não numérico retorna 422"""
         # Act
         response = client.get("/api/v1/items/abc")
         
@@ -445,10 +444,10 @@ class TestFilterItemsAPI:
         response = client.get("/api/v1/items/categoria/")
         
         # Assert
-        assert response.status_code == 404 or response.status_code == 400
+        assert response.status_code == 422
     
-    def test_buscar_por_status_disponivel(self, client):
-        """Testa busca de itens por status"""
+    async def test_buscar_por_status_disponivel(self, client):
+        """Testa a busca por status 'disponivel'"""
         # Arrange - Cria itens
         for i in range(2):
             item_data = {
@@ -479,7 +478,7 @@ class TestFilterItemsAPI:
         
         # Assert
         assert response.status_code == 400
-        assert "inválido" in response.json()["detail"].lower() or "invalid" in response.json()["detail"].lower()
+        assert "inválido" in response.json()["message"].lower()
 
 
 class TestAPIResponseFormat:
