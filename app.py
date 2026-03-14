@@ -18,9 +18,9 @@ from reclamante.src.infrastructure.database.config import init_db as init_db_rec
 async def lifespan(app: FastAPI):
     """Gerencia o ciclo de vida da aplicação"""
     # Inicializa os bancos de dados
-    await init_db_item()
-    await init_db_responsavel()
     await init_db_local()
+    await init_db_responsavel()
+    await init_db_item()
     await init_db_devolucao()
     await init_db_reclamante()
     yield
@@ -33,11 +33,11 @@ app = FastAPI(
 )
 
 # Inclui as rotas
-app.include_router(item_routes.router, prefix="/api/v1/items")
-app.include_router(responsavel_routes.router, prefix="/api/v1/responsaveis")
-app.include_router(local_routes.router, prefix="/api/v1/local")
-app.include_router(devolucao_routes.router, prefix="/api/v1/devolucoes")
-app.include_router(reclamante_routes.router, prefix="/api/v1/reclamantes")
+app.include_router(item_routes.router, prefix="/api/v1")
+app.include_router(responsavel_routes.router, prefix="/api/v1")
+app.include_router(local_routes.router, prefix="/api/v1")
+app.include_router(devolucao_routes.router, prefix="/api/v1")
+app.include_router(reclamante_routes.router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
