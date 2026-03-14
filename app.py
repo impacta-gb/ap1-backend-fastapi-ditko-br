@@ -32,12 +32,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Inclui as rotas
-app.include_router(item_routes.router, prefix="/api/v1")
-app.include_router(responsavel_routes.router, prefix="/api/v1")
-app.include_router(local_routes.router, prefix="/api/v1")
-app.include_router(devolucao_routes.router, prefix="/api/v1")
-app.include_router(reclamante_routes.router, prefix="/api/v1")
+# Inclui as rotas por recurso
+app.include_router(item_routes.router, prefix="/api/v1/items")
+app.include_router(responsavel_routes.router, prefix="/api/v1/responsaveis")
+app.include_router(local_routes.router, prefix="/api/v1/locais")
+app.include_router(devolucao_routes.router, prefix="/api/v1/devolucoes")
+app.include_router(reclamante_routes.router, prefix="/api/v1/reclamantes")
 
 @app.get("/")
 def read_root():
