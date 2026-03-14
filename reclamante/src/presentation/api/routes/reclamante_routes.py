@@ -30,13 +30,12 @@ async def create_reclamante(
     repository = ReclamanteRepositoryImpl(session)
     use_case = CreateReclamanteUseCase(repository)
 
-    reclamante = Reclamante(
-        nome=reclamante_data.nome,
-        telefone=reclamante_data.telefone,
-        documento=reclamante_data.documento
-    )
-
     try:
+        reclamante = Reclamante(
+            nome=reclamante_data.nome,
+            telefone=reclamante_data.telefone,
+            documento=reclamante_data.documento
+        )
         created_reclamante = await use_case.execute(reclamante)
         return created_reclamante
     except ValueError as e:
@@ -53,15 +52,18 @@ async def get_all_reclamantes(
     repository = ReclamanteRepositoryImpl(session)
     use_case = GetAllReclamantesUseCase(repository)
 
-    reclamantes = await use_case.execute(skip, limit)
-    total = await repository.count()
+    try:
+        reclamantes = await use_case.execute(skip, limit)
+        total = await repository.count()
 
-    return ReclamanteListResponse(
-        reclamantes=reclamantes,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
+        return ReclamanteListResponse(
+            reclamantes=reclamantes,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{reclamante_id}",
@@ -74,15 +76,18 @@ async def get_reclamante(
     repository = ReclamanteRepositoryImpl(session)
     use_case = GetReclamanteByIdUseCase(repository)
 
-    reclamante = await use_case.execute(reclamante_id)
+    try:
+        reclamante = await use_case.execute(reclamante_id)
 
-    if not reclamante:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Reclamante com ID {reclamante_id} não encontrado'
-        )
-    
-    return reclamante
+        if not reclamante:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'Reclamante com ID {reclamante_id} não encontrado'
+            )
+
+        return reclamante
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{reclamante_id}", response_model=ReclamanteResponse)
