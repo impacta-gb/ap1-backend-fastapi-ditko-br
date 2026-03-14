@@ -1058,8 +1058,207 @@ class TestEntidadeAPI:
 - **Unitários:** 52 (Entidade: 15, Use Cases: 25, Schemas: 12)
 - **Integração:** 55 (Repository: 13, E2E: 12, API: 20)
 
-### Reclamante (Planejado)
-- **Total:** ~70 testes (em desenvolvimento)
+### Reclamante (Implementado)
+- **Total:** 85 testes
+- **Unitários:** 45 (Entidade: 10, Use Cases: 20, Schemas: 15)
+- **Integração:** 40 (Repository: 12, E2E: 10, API: 18)
+
+---
+
+## Entidade: Reclamante
+
+### Testes Unitários
+
+**Arquivo:** `reclamante/tests/unit/test_reclamante_entity.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_reclamante_valido` | Cria reclamante com dados válidos |
+| `test_criar_reclamante_com_id` | Criação simulando objeto do banco |
+| `test_criar_reclamante_sem_nome` | Valida obrigatoriedade do nome |
+| `test_criar_reclamante_sem_telefone` | Valida obrigatoriedade do telefone |
+| `test_criar_reclamante_sem_email` | Valida obrigatoriedade do email |
+| `test_criar_reclamante_com_email_invalido` | Valida formato do email |
+| `test_criar_reclamante_com_telefone_invalido` | Valida formato do telefone |
+| `test_atualizar_dados_pessoais` | Testa método de atualização de dados |
+| `test_atualizar_dados_com_email_invalido` | Valida email na atualização |
+| `test_reclamante_representacao` | Testa a representação em string da entidade |
+
+**Executar:**
+```bash
+pytest reclamante/tests/unit/test_reclamante_entity.py -v
+```
+
+---
+
+**Arquivo:** `reclamante/tests/unit/test_reclamante_use_cases.py`
+
+#### CreateReclamanteUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_reclamante_com_sucesso` | Criação válida |
+| `test_criar_reclamante_com_email_existente` | Bloqueia email duplicado |
+| `test_criar_reclamante_com_telefone_invalido` | Valida formato do telefone |
+
+#### GetReclamanteByIdUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_reclamante_existente` | Retorna reclamante encontrado |
+| `test_buscar_reclamante_inexistente` | Retorna None |
+| `test_buscar_reclamante_com_id_invalido` | Valida ID > 0 |
+
+#### GetAllReclamantesUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_listar_todos_reclamantes` | Lista com paginação padrão |
+| `test_listar_reclamantes_com_paginacao_customizada` | Testa skip/limit customizado |
+| `test_listar_reclamantes_com_skip_negativo` | Bloqueia skip < 0 |
+| `test_listar_reclamantes_com_limit_invalido` | Bloqueia limit ≤ 0 |
+
+#### UpdateReclamanteUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_atualizar_reclamante_com_sucesso` | Atualização válida |
+| `test_atualizar_reclamante_inexistente` | Retorna None se não encontrar |
+| `test_atualizar_reclamante_com_email_invalido` | Valida email na atualização |
+
+#### DeleteReclamanteUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_deletar_reclamante_existente` | Exclui reclamante |
+| `test_deletar_reclamante_inexistente` | Retorna False |
+
+#### GetReclamanteByEmailUseCase
+| Teste | Descrição |
+|-------|-----------|
+| `test_buscar_por_email_existente` | Filtra por email |
+| `test_buscar_por_email_inexistente` | Retorna None |
+| `test_buscar_por_email_invalido` | Valida formato do email |
+
+**Executar:**
+```bash
+pytest reclamante/tests/unit/test_reclamante_use_cases.py -v
+```
+
+---
+
+**Arquivo:** `reclamante/tests/unit/test_reclamante_schema.py`
+
+| Teste | Schema | Descrição |
+|-------|--------|-----------|
+| `test_criar_schema_com_dados_validos` | ReclamanteCreate | Validação sucesso |
+| `test_schema_sem_nome_falha` | ReclamanteCreate | Valida nome |
+| `test_schema_sem_telefone_falha` | ReclamanteCreate | Valida telefone |
+| `test_schema_sem_email_falha` | ReclamanteCreate | Valida email |
+| `test_schema_com_email_invalido_falha` | ReclamanteCreate | Valida formato do email |
+| `test_update_schema_com_dados_validos` | ReclamanteUpdate | Update válido |
+| `test_update_schema_com_email_invalido` | ReclamanteUpdate | Valida email no update |
+| `test_patch_schema_com_apenas_nome` | ReclamantePatch | Patch parcial nome |
+| `test_patch_schema_com_email_invalido` | ReclamantePatch | Valida email no patch |
+| `test_response_schema_com_todos_campos` | ReclamanteResponse | Serialização |
+| `test_response_schema_sem_id_falha` | ReclamanteResponse | ID obrigatório |
+| `test_list_response_schema_com_reclamantes` | ReclamanteListResponse | Lista com dados |
+| `test_list_response_schema_paginacao` | ReclamanteListResponse | Paginação |
+
+**Executar:**
+```bash
+pytest reclamante/tests/unit/test_reclamante_schema.py -v
+```
+
+---
+
+### Testes de Integração
+
+**Arquivo:** `reclamante/tests/integration/test_reclamante_repository.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_criar_reclamante` | CRUD: Create |
+| `test_buscar_reclamante_por_id` | CRUD: Read |
+| `test_buscar_reclamante_por_email` | Filtro por email |
+| `test_listar_todos_reclamantes` | Lista todos |
+| `test_listar_reclamantes_com_paginacao` | Paginação funcional |
+| `test_atualizar_reclamante` | CRUD: Update |
+| `test_deletar_reclamante` | CRUD: Delete |
+| `test_contar_total_de_reclamantes` | Método count() |
+| `test_conversao_model_to_entity` | Conversão ORM ↔ Domain |
+| `test_criar_reclamante_com_email_duplicado_falha` | Valida constraint de email único |
+
+**Executar:**
+```bash
+pytest reclamante/tests/integration/test_reclamante_repository.py -v
+```
+
+---
+
+**Arquivo:** `reclamante/tests/integration/test_reclamante_end_to_end.py`
+
+| Teste | Descrição |
+|-------|-----------|
+| `test_fluxo_completo_criar_buscar_atualizar_deletar` | CRUD completo |
+| `test_fluxo_listar_com_paginacao` | Paginação end-to-end |
+| `test_fluxo_buscar_por_email` | Filtro por email |
+| `test_fluxo_validacao_email_invalido_na_criacao` | Validação de email |
+| `test_fluxo_validacao_id_invalido_nas_buscas` | Validação de IDs |
+| `test_fluxo_contar_total_de_reclamantes` | Count end-to-end |
+| `test_fluxo_metodo_entidade_atualizar_dados` | Método de domínio |
+| `test_fluxo_email_duplicado_ao_criar_falha` | Regra de negócio de email único |
+
+**Executar:**
+```bash
+pytest reclamante/tests/integration/test_reclamante_end_to_end.py -v
+```
+
+---
+
+### Testes de API
+
+**Arquivo:** `reclamante/tests/integration/test_reclamante_api.py`
+
+#### POST /api/v1/reclamantes
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_criar_reclamante_com_sucesso` | 201 | Cria reclamante válido |
+| `test_criar_reclamante_com_dados_invalidos` | 422 | Valida campos obrigatórios |
+| `test_criar_reclamante_com_email_invalido` | 422 | Valida formato do email |
+| `test_criar_reclamante_com_email_duplicado` | 400 | Bloqueia email duplicado |
+
+#### GET /api/v1/reclamantes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_buscar_reclamante_existente` | 200 | Retorna reclamante |
+| `test_buscar_reclamante_inexistente` | 404 | Não encontrado |
+| `test_buscar_reclamante_com_id_string` | 422 | Tipo inválido |
+
+#### GET /api/v1/reclamantes
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_listar_todos_reclamantes` | 200 | Lista reclamantes |
+| `test_listar_reclamantes_com_paginacao` | 200 | Paginação |
+
+#### PUT /api/v1/reclamantes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_atualizar_reclamante_com_sucesso` | 200 | Atualiza reclamante |
+| `test_atualizar_reclamante_inexistente` | 404 | Não encontrado |
+| `test_atualizar_com_email_invalido` | 422 | Valida email |
+
+#### DELETE /api/v1/reclamantes/{id}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_deletar_reclamante_com_sucesso` | 204 | Exclui reclamante |
+| `test_deletar_reclamante_inexistente` | 404 | Não encontrado |
+
+#### GET /api/v1/reclamantes/email/{email}
+| Teste | Status | Descrição |
+|-------|--------|-----------|
+| `test_buscar_por_email_com_sucesso` | 200 | Filtra por email |
+| `test_buscar_por_email_inexistente_api` | 404 | Email não encontrado |
+
+**Executar:**
+```bash
+pytest reclamante/tests/integration/test_reclamante_api.py -v
+```
 
 ---
 
@@ -1118,4 +1317,4 @@ engine = create_async_engine(
 
 ---
 
-**Última atualização:** Março 2026 - Devolução (107 testes implementados)
+**Última atualização:** Março 2026 - Reclamante (85 testes implementados)
