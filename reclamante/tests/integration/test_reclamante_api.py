@@ -1,84 +1,320 @@
+"""
+Testes de integração da API REST de Reclamante
+Testa os endpoints HTTP, validações, status codes e serialização
+"""
 import pytest
-from starlette.testclient import TestClient
-from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-import os
+import pytest_asyncio
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.pool import StaticPool
 from reclamante.src.infrastructure.database.config import Base, get_session
-from app import app as main_app
-from typing import AsyncGenerator
+from app import app
 
-# Configuração do banco de dados de teste
-DATABASE_URL_TEST = "sqlite+aiosqlite:///./test_reclamante.db"
-engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
-async_session_maker_test = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 
-async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker_test() as session:
-        yield session
+@pytest_asyncio.fixture
+async def test_db():
+    """Cria um banco de dados SQLite em memória para testes"""
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
 
-@pytest.fixture(scope="module", autouse=True)
-async def setup_database():
-    async with engine_test.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield
-    os.remove("test_reclamante.db")
+
+    async_session = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    yield async_session
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+    await engine.dispose()
+
 
 @pytest.fixture
-def app() -> FastAPI:
-    main_app.dependency_overrides[get_session] = override_get_session
-    return main_app
+def client(test_db):
+    """Cria um cliente de teste para a API"""
+    async def override_get_session():
+        async with test_db() as session:
+            yield session
 
-@pytest.fixture
-async def client(app: FastAPI) -> AsyncGenerator[TestClient, None]:
-    async with TestClient(app=app, base_url="http://test") as c:
-        yield c
+    app.dependency_overrides[get_session] = override_get_session
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        yield test_client
+    app.dependency_overrides.pop(get_session, None)
 
-@pytest.mark.asyncio
-async def test_create_reclamante(client: TestClient):
-    response = await client.post("/api/v1/reclamantes/", json={"nome": "Teste", "documento": "111", "telefone": "999"})
-    assert response.status_code == 201
-    data = response.json()
-    assert data["nome"] == "Teste"
-    assert "id" in data
 
-@pytest.mark.asyncio
-async def test_get_all_reclamantes(client: TestClient):
-    response = await client.get("/api/v1/reclamantes/")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["reclamantes"], list)
+class TestCreateReclamanteAPI:
+    """Testes para POST /api/v1/reclamantes"""
 
-@pytest.mark.asyncio
-async def test_get_reclamante_by_id(client: TestClient):
-    # Primeiro, crie um reclamante para ter um ID para buscar
-    create_response = await client.post("/api/v1/reclamantes/", json={"nome": "Busca", "documento": "222", "telefone": "888"})
-    reclamante_id = create_response.json()["id"]
+    def test_criar_reclamante_com_sucesso(self, client):
+        """Testa criação de reclamante via API com dados válidos"""
+        # Arrange
+        reclamante_data = {
+            "nome": "Teste",
+            "documento": "111",
+            "telefone": "999",
+        }
 
-    response = await client.get(f"/api/v1/reclamantes/{reclamante_id}")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == reclamante_id
-    assert data["nome"] == "Busca"
+        # Act
+        response = client.post("/api/v1/reclamantes/", json=reclamante_data)
 
-@pytest.mark.asyncio
-async def test_update_reclamante(client: TestClient):
-    create_response = await client.post("/api/v1/reclamantes/", json={"nome": "Antigo", "documento": "333", "telefone": "777"})
-    reclamante_id = create_response.json()["id"]
+        # Assert
+        assert response.status_code == 201
+        data = response.json()
+        assert data["nome"] == "Teste"
+        assert "id" in data
 
-    response = await client.put(f"/api/v1/reclamantes/{reclamante_id}", json={"nome": "Novo", "documento": "333", "telefone": "666"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["nome"] == "Novo"
-    assert data["telefone"] == "666"
+    def test_criar_reclamante_com_dados_invalidos(self, client):
+        """Testa criação com payload inválido"""
+        # Arrange
+        reclamante_data = {
+            "nome": "",
+            "documento": "111",
+            "telefone": "999",
+        }
 
-@pytest.mark.asyncio
-async def test_delete_reclamante(client: TestClient):
-    create_response = await client.post("/api/v1/reclamantes/", json={"nome": "Apagar", "documento": "444", "telefone": "555"})
-    reclamante_id = create_response.json()["id"]
+        # Act
+        response = client.post("/api/v1/reclamantes/", json=reclamante_data)
 
-    delete_response = await client.delete(f"/api/v1/reclamantes/{reclamante_id}")
-    assert delete_response.status_code == 204
+        # Assert
+        assert response.status_code in [400, 422]
 
-    get_response = await client.get(f"/api/v1/reclamantes/{reclamante_id}")
-    assert get_response.status_code == 404
+    def test_criar_reclamante_com_campo_faltando(self, client):
+        """Testa criação faltando campo obrigatório"""
+        # Arrange
+        reclamante_data = {
+            "nome": "Teste",
+            "telefone": "999",
+        }
+
+        # Act
+        response = client.post("/api/v1/reclamantes/", json=reclamante_data)
+
+        # Assert
+        assert response.status_code == 422
+
+    def test_criar_reclamante_com_telefone_vazio(self, client):
+        """Testa criação com telefone vazio"""
+        # Arrange
+        reclamante_data = {
+            "nome": "Teste",
+            "documento": "111",
+            "telefone": "",
+        }
+
+        # Act
+        response = client.post("/api/v1/reclamantes/", json=reclamante_data)
+
+        # Assert
+        assert response.status_code in [400, 422]
+
+    def test_criar_reclamante_com_documento_vazio(self, client):
+        """Testa criação com documento vazio (validação de domínio)"""
+        # Arrange
+        reclamante_data = {
+            "nome": "Teste",
+            "documento": "",
+            "telefone": "999",
+        }
+
+        # Act
+        response = client.post("/api/v1/reclamantes/", json=reclamante_data)
+
+        # Assert
+        assert response.status_code in [400, 422]
+
+
+class TestGetAllReclamantesAPI:
+    """Testes para GET /api/v1/reclamantes"""
+
+    def test_listar_todos_reclamantes(self, client):
+        """Testa listagem de reclamantes"""
+        # Act
+        response = client.get("/api/v1/reclamantes/")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert "reclamantes" in data
+        assert "total" in data
+
+    def test_listar_reclamantes_com_paginacao(self, client):
+        """Testa listagem com paginação"""
+        # Act
+        response = client.get("/api/v1/reclamantes/?skip=0&limit=10")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["skip"] == 0
+        assert data["limit"] == 10
+
+    def test_listar_reclamantes_com_skip_negativo(self, client):
+        """Testa listagem com skip negativo"""
+        # Act
+        response = client.get("/api/v1/reclamantes/?skip=-1")
+
+        # Assert
+        assert response.status_code in [400, 422, 500]
+
+    def test_listar_reclamantes_com_limit_invalido(self, client):
+        """Testa listagem com limit inválido"""
+        # Act
+        response = client.get("/api/v1/reclamantes/?limit=0")
+
+        # Assert
+        assert response.status_code in [400, 422, 500]
+
+
+class TestGetReclamanteByIdAPI:
+    """Testes para GET /api/v1/reclamantes/{id}"""
+
+    def test_buscar_reclamante_existente(self, client):
+        """Testa busca de reclamante existente"""
+        # Arrange
+        create_response = client.post(
+            "/api/v1/reclamantes/",
+            json={"nome": "Busca", "documento": "222", "telefone": "888"},
+        )
+        reclamante_id = create_response.json()["id"]
+
+        # Act
+        response = client.get(f"/api/v1/reclamantes/{reclamante_id}")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == reclamante_id
+        assert data["nome"] == "Busca"
+
+    def test_buscar_reclamante_inexistente(self, client):
+        """Testa busca de reclamante que não existe"""
+        # Act
+        response = client.get("/api/v1/reclamantes/9999")
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_buscar_reclamante_com_id_string(self, client):
+        """Testa busca com id inválido do tipo string"""
+        # Act
+        response = client.get("/api/v1/reclamantes/abc")
+
+        # Assert
+        assert response.status_code == 422
+
+    def test_buscar_reclamante_com_id_negativo(self, client):
+        """Testa busca com id negativo"""
+        # Act
+        response = client.get("/api/v1/reclamantes/-1")
+
+        # Assert
+        assert response.status_code in [400, 404, 422, 500]
+
+
+class TestUpdateReclamanteAPI:
+    """Testes para PUT /api/v1/reclamantes/{id}"""
+
+    def test_atualizar_reclamante_com_sucesso(self, client):
+        """Testa atualização de reclamante"""
+        # Arrange
+        create_response = client.post(
+            "/api/v1/reclamantes/",
+            json={"nome": "Antigo", "documento": "333", "telefone": "777"},
+        )
+        reclamante_id = create_response.json()["id"]
+
+        # Act
+        response = client.put(
+            f"/api/v1/reclamantes/{reclamante_id}",
+            json={"nome": "Novo", "documento": "333", "telefone": "666"},
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["nome"] == "Novo"
+        assert data["telefone"] == "666"
+
+    def test_atualizar_reclamante_inexistente(self, client):
+        """Testa update em reclamante inexistente"""
+        # Arrange
+        payload = {"nome": "Novo", "documento": "333", "telefone": "666"}
+
+        # Act
+        response = client.put("/api/v1/reclamantes/9999", json=payload)
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_atualizar_reclamante_com_payload_incompleto(self, client):
+        """Testa update com payload incompleto"""
+        # Act
+        response = client.put("/api/v1/reclamantes/1", json={"nome": "Novo"})
+
+        # Assert
+        assert response.status_code == 422
+
+    def test_atualizar_reclamante_com_nome_vazio(self, client):
+        """Testa update com nome vazio"""
+        # Arrange
+        create_response = client.post(
+            "/api/v1/reclamantes/",
+            json={"nome": "Original", "documento": "909", "telefone": "101"},
+        )
+        reclamante_id = create_response.json()["id"]
+
+        # Act
+        response = client.put(
+            f"/api/v1/reclamantes/{reclamante_id}",
+            json={"nome": "", "documento": "909", "telefone": "101"},
+        )
+
+        # Assert
+        assert response.status_code in [400, 422]
+
+
+class TestDeleteReclamanteAPI:
+    """Testes para DELETE /api/v1/reclamantes/{id}"""
+
+    def test_deletar_reclamante_com_sucesso(self, client):
+        """Testa exclusão de reclamante"""
+        # Arrange
+        create_response = client.post(
+            "/api/v1/reclamantes/",
+            json={"nome": "Apagar", "documento": "444", "telefone": "555"},
+        )
+        reclamante_id = create_response.json()["id"]
+
+        # Act
+        delete_response = client.delete(f"/api/v1/reclamantes/{reclamante_id}")
+
+        # Assert
+        assert delete_response.status_code == 204
+
+        # Act
+        get_response = client.get(f"/api/v1/reclamantes/{reclamante_id}")
+
+        # Assert
+        assert get_response.status_code == 404
+
+    def test_deletar_reclamante_inexistente(self, client):
+        """Testa exclusão de reclamante inexistente"""
+        # Act
+        response = client.delete("/api/v1/reclamantes/9999")
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_deletar_reclamante_com_id_string(self, client):
+        """Testa exclusão com id inválido do tipo string"""
+        # Act
+        response = client.delete("/api/v1/reclamantes/abc")
+
+        # Assert
+        assert response.status_code == 422
