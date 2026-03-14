@@ -1,56 +1,46 @@
-import asyncio
-from typing import AsyncGenerator
+"""
+Configurações e fixtures para testes de integração de Reclamante
+"""
 
 import pytest
-from fastapi import FastAPI
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from reclamante.src.infrastructure.database.config import Base
+from reclamante.src.infrastructure.database.models import ReclamanteModel
 
-from app import app
-from devolucao.src.infrastructure.database.base_model import Base as DevolucaoBase
-from item.src.infrastructure.database.base_model import Base as ItemBase
-from local.src.infrastructure.database.base_model import Base as LocalBase
-from reclamante.src.infrastructure.database.base_model import Base as ReclamanteBase
-from responsavel.src.infrastructure.database.base_model import \
-    Base as ResponsavelBase
+# URL do banco de dados de teste (usa SQLite em memória)
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-DATABASE_URL_TEST = "sqlite+aiosqlite:///./test_reclamante_e2e.db"
-engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
-async_session_maker_test = sessionmaker(
-    engine_test, class_=AsyncSession, expire_on_commit=False
-)
+@pytest_asyncio.fixture
+async def test_engine():
+    """Cria engine de teste"""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        future=True
+    )
 
+    # Cria as tabelas
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-@pytest.fixture(scope="function", autouse=True)
-async def init_db():
-    async with engine_test.begin() as conn:
-        await conn.run_sync(LocalBase.metadata.create_all)
-        await conn.run_sync(ResponsavelBase.metadata.create_all)
-        await conn.run_sync(ItemBase.metadata.create_all)
-        await conn.run_sync(DevolucaoBase.metadata.create_all)
-        await conn.run_sync(ReclamanteBase.metadata.create_all)
-    yield
-    async with engine_test.begin() as conn:
-        await conn.run_sync(ReclamanteBase.metadata.drop_all)
-        await conn.run_sync(DevolucaoBase.metadata.drop_all)
-        await conn.run_sync(ItemBase.metadata.drop_all)
-        await conn.run_sync(ResponsavelBase.metadata.drop_all)
-        await conn.run_sync(LocalBase.metadata.drop_all)
+    yield engine
 
+    # Limpa as tabelas após os testes
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
-@pytest.fixture(scope="function")
-async def get_session_test() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker_test() as session:
+    await engine.dispose()
+
+@pytest_asyncio.fixture
+async def test_session(test_engine):
+    """Cria sessão de teste"""
+    async_session_maker = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+
+    async with async_session_maker() as session:
         yield session
-
-
-@pytest.fixture(scope="function")
-def app_test() -> FastAPI:
-    return app
-
-
-@pytest.fixture
-async def client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://test") as c:
-        yield c
+        await session.rollback()
