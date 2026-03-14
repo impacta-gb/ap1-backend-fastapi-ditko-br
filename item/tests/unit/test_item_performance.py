@@ -126,8 +126,13 @@ class TestPerformanceListagem:
         tempo2 = time.time() - inicio2
         
         # Assert - Tempos devem ser similares (diferença < 50%)
-        diferenca = abs(tempo1 - tempo2) / max(tempo1, tempo2)
-        assert diferenca < 0.5
+        if max(tempo1, tempo2) > 0:
+            diferenca = abs(tempo1 - tempo2) / max(tempo1, tempo2)
+            assert diferenca < 0.5
+        else:
+            # Se ambos os tempos forem zero, a diferença é zero, o que é aceitável.
+            assert True
+        
         print(f"\nTempo primeira página: {tempo1:.4f}s")
         print(f"Tempo última página: {tempo2:.4f}s")
         print(f"Diferença: {diferenca*100:.2f}%")
