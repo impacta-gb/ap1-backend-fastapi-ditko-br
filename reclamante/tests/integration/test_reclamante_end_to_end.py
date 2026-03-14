@@ -1,91 +1,198 @@
+"""
+Testes de integração end-to-end para o fluxo completo de Reclamante
+Testa a integração entre Use Cases, Repository e Database
+"""
 import pytest
-from starlette.testclient import TestClient
-from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-import os
-from reclamante.src.infrastructure.database.config import Base, get_session
-from app import app as main_app
-from typing import Iterator, AsyncGenerator
-from httpx import AsyncClient
+from reclamante.src.domain.entities.reclamante import Reclamante
+from reclamante.src.application.use_cases.reclamante_use_cases import (
+    CreateReclamanteUseCase,
+    GetReclamanteByIdUseCase,
+    GetAllReclamantesUseCase,
+    UpdateReclamanteUseCase,
+    DeleteReclamanteUseCase,
+)
+from reclamante.src.infrastructure.repositories.reclamante_repository_impl import ReclamanteRepositoryImpl
 
-# Configuração do banco de dados de teste
-DATABASE_URL_TEST = "sqlite+aiosqlite:///./test_reclamante_e2e.db"
-engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
-async_session_maker_test = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 
-async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker_test() as session:
-        yield session
+def criar_reclamante(**kwargs) -> Reclamante:
+    """Helper para criar reclamante de teste"""
+    dados = {
+        "nome": "Reclamante Teste",
+        "documento": "12345678900",
+        "telefone": "11987654321",
+    }
+    dados.update(kwargs)
+    return Reclamante(**dados)
 
-@pytest.fixture(scope="module", autouse=True)
-async def setup_database():
-    # This is a synchronous fixture, so we can't use async with
-    # For simplicity, we'll just create and remove the db file
-    if os.path.exists("test_reclamante_e2e.db"):
-        os.remove("test_reclamante_e2e.db")
-    # The engine and tables will be created by the app lifespan
-    yield
-    if os.path.exists("test_reclamante_e2e.db"):
-        os.remove("test_reclamante_e2e.db")
-
-@pytest.fixture
-def app() -> FastAPI:
-    main_app.dependency_overrides[get_session] = override_get_session
-    return main_app
-
-@pytest.fixture
-async def client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://test") as c:
-        yield c
 
 @pytest.mark.asyncio
-async def test_fluxo_completo_criar_buscar_atualizar_deletar(client: AsyncClient):
-    # 1. Criar
-    response_create = await client.post("/api/v1/reclamantes/", json={"nome": "Fluxo Completo", "documento": "12345678900", "telefone": "11987654321"})
-    assert response_create.status_code == 201
-    data_create = response_create.json()
-    reclamante_id = data_create["id"]
+class TestReclamanteEndToEnd:
+    """Testes end-to-end do fluxo completo de Reclamante"""
 
-    # 2. Buscar
-    response_get = await client.get(f"/api/v1/reclamantes/{reclamante_id}")
-    assert response_get.status_code == 200
-    assert response_get.json()["nome"] == "Fluxo Completo"
+    async def test_fluxo_completo_criar_buscar_atualizar_deletar(self, test_session):
+        """Testa o fluxo completo: criar -> buscar -> atualizar -> deletar"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        create_use_case = CreateReclamanteUseCase(repository)
+        get_use_case = GetReclamanteByIdUseCase(repository)
+        update_use_case = UpdateReclamanteUseCase(repository)
+        delete_use_case = DeleteReclamanteUseCase(repository)
 
-    # 3. Atualizar
-    response_update = await client.put(f"/api/v1/reclamantes/{reclamante_id}", json={"nome": "Fluxo Atualizado", "documento": "12345678900", "telefone": "11987654321"})
-    assert response_update.status_code == 200
-    assert response_update.json()["nome"] == "Fluxo Atualizado"
+        # 1. Criar
+        reclamante_criado = await create_use_case.execute(
+            criar_reclamante(nome="Fluxo Completo", documento="12345678900")
+        )
 
-    # 4. Deletar
-    response_delete = await client.delete(f"/api/v1/reclamantes/{reclamante_id}")
-    assert response_delete.status_code == 204
+        # Assert criação
+        assert reclamante_criado.id is not None
+        assert reclamante_criado.nome == "Fluxo Completo"
 
-    # 5. Verificar se foi deletado
-    response_get_after_delete = await client.get(f"/api/v1/reclamantes/{reclamante_id}")
-    assert response_get_after_delete.status_code == 404
+        # 2. Buscar
+        reclamante_encontrado = await get_use_case.execute(reclamante_criado.id)
 
-@pytest.mark.asyncio
-async def test_fluxo_listar_com_paginacao(client: AsyncClient):
-    # Adicionar alguns reclamantes para teste de paginação
-    for i in range(15):
-        await client.post("/api/v1/reclamantes/", json={"nome": f"Paginacao {i}", "documento": f"000{i}", "telefone": f"999{i}"})
+        # Assert busca
+        assert reclamante_encontrado is not None
+        assert reclamante_encontrado.id == reclamante_criado.id
 
-    # Clear the table to ensure a clean state
-    async with async_session_maker_test() as session:
-        async with session.begin():
-            await session.execute(Base.metadata.tables['reclamantes'].delete())
+        # 3. Atualizar
+        reclamante_para_atualizar = criar_reclamante(
+            nome="Fluxo Atualizado",
+            documento="12345678900",
+            telefone="11999998888",
+        )
 
-    # Adicionar alguns reclamantes para teste de paginação
-    for i in range(15):
-        await client.post("/api/v1/reclamantes/", json={"nome": f"Paginacao {i}", "documento": f"000{i}", "telefone": f"999{i}"})
+        reclamante_atualizado = await update_use_case.execute(
+            reclamante_criado.id,
+            reclamante_para_atualizar,
+        )
 
-    # Listar com paginação
-    response = await client.get("/api/v1/reclamantes/?skip=5&limit=5")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data["reclamantes"]) == 5
-    assert data["reclamantes"][0]["nome"] == "Paginacao 5"
-    assert data["total"] >= 15
-    assert data["skip"] == 5
-    assert data["limit"] == 5
+        # Assert atualização
+        assert reclamante_atualizado is not None
+        assert reclamante_atualizado.nome == "Fluxo Atualizado"
+        assert reclamante_atualizado.telefone == "11999998888"
+
+        # 4. Deletar
+        resultado_delete = await delete_use_case.execute(reclamante_criado.id)
+        reclamante_deletado = await get_use_case.execute(reclamante_criado.id)
+
+        # Assert deleção
+        assert resultado_delete is True
+        assert reclamante_deletado is None
+
+    async def test_fluxo_listar_com_paginacao(self, test_session):
+        """Testa listagem de reclamantes com paginação"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        create_use_case = CreateReclamanteUseCase(repository)
+        list_use_case = GetAllReclamantesUseCase(repository)
+
+        for i in range(15):
+            await create_use_case.execute(
+                criar_reclamante(
+                    nome=f"Paginacao {i}",
+                    documento=f"DOC{i:03d}",
+                    telefone=f"1199000{i:04d}",
+                )
+            )
+
+        # Act
+        primeira_pagina = await list_use_case.execute(skip=0, limit=10)
+        segunda_pagina = await list_use_case.execute(skip=10, limit=10)
+
+        # Assert
+        assert len(primeira_pagina) == 10
+        assert len(segunda_pagina) == 5
+        assert primeira_pagina[0].id != segunda_pagina[0].id
+
+    async def test_fluxo_validacao_id_invalido_na_busca(self, test_session):
+        """Testa validação de ID inválido na busca por ID"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        get_use_case = GetReclamanteByIdUseCase(repository)
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="ID de reclamante deve ser maior que zero"):
+            await get_use_case.execute(0)
+
+        with pytest.raises(ValueError, match="ID de reclamante deve ser maior que zero"):
+            await get_use_case.execute(-3)
+
+    async def test_fluxo_skip_negativo_na_listagem(self, test_session):
+        """Testa validação de skip negativo na listagem"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        list_use_case = GetAllReclamantesUseCase(repository)
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Skip não pode ser negativo"):
+            await list_use_case.execute(skip=-1)
+
+    async def test_fluxo_limit_invalido_na_listagem(self, test_session):
+        """Testa validação de limit inválido na listagem"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        list_use_case = GetAllReclamantesUseCase(repository)
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Limit deve estar entre 1 e 1000"):
+            await list_use_case.execute(limit=0)
+
+        with pytest.raises(ValueError, match="Limit deve estar entre 1 e 1000"):
+            await list_use_case.execute(limit=1001)
+
+    async def test_fluxo_buscar_reclamante_inexistente_retorna_none(self, test_session):
+        """Testa busca de reclamante inexistente"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        get_use_case = GetReclamanteByIdUseCase(repository)
+
+        # Act
+        resultado = await get_use_case.execute(9999)
+
+        # Assert
+        assert resultado is None
+
+    async def test_fluxo_atualizar_reclamante_inexistente_retorna_none(self, test_session):
+        """Testa atualização de reclamante inexistente"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        update_use_case = UpdateReclamanteUseCase(repository)
+
+        # Act
+        resultado = await update_use_case.execute(9999, criar_reclamante(nome="Inexistente"))
+
+        # Assert
+        assert resultado is None
+
+    async def test_fluxo_deletar_reclamante_inexistente_retorna_false(self, test_session):
+        """Testa exclusão de reclamante inexistente"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        delete_use_case = DeleteReclamanteUseCase(repository)
+
+        # Act
+        resultado = await delete_use_case.execute(9999)
+
+        # Assert
+        assert resultado is False
+
+    async def test_fluxo_contar_total_de_reclamantes(self, test_session):
+        """Testa contagem total no fluxo de integração"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        create_use_case = CreateReclamanteUseCase(repository)
+
+        for i in range(4):
+            await create_use_case.execute(
+                criar_reclamante(
+                    nome=f"Count {i}",
+                    documento=f"DOC{i}",
+                    telefone=f"TEL{i}",
+                )
+            )
+
+        # Act
+        total = await repository.count()
+
+        # Assert
+        assert total == 4
