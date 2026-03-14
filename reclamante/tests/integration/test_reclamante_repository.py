@@ -1,84 +1,217 @@
+"""
+Testes de integração para o repositório de Reclamante
+"""
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-import os
 from reclamante.src.domain.entities.reclamante import Reclamante
-from reclamante.src.infrastructure.database.models import ReclamanteModel
 from reclamante.src.infrastructure.repositories.reclamante_repository_impl import ReclamanteRepositoryImpl
 
-# Configuração do banco de dados de teste
-DATABASE_URL_TEST = "sqlite+aiosqlite:///./test_reclamante_repo.db"
-engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
-async_session_maker_test = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 
-@pytest.fixture(scope="module", autouse=True)
-async def setup_database():
-    async with engine_test.begin() as conn:
-        await conn.run_sync(ReclamanteModel.metadata.create_all)
-    yield
-    os.remove("test_reclamante_repo.db")
+def criar_reclamante(**kwargs) -> Reclamante:
+    """Helper para criar reclamante de teste"""
+    dados = {
+        "nome": "Reclamante Teste",
+        "documento": "12345678900",
+        "telefone": "11987654321",
+    }
+    dados.update(kwargs)
+    return Reclamante(**dados)
 
-@pytest.fixture
-async def db_session() -> AsyncSession:
-    async with async_session_maker_test() as session:
-        yield session
-
-@pytest.fixture
-def repository(db_session: AsyncSession) -> ReclamanteRepositoryImpl:
-    return ReclamanteRepositoryImpl(db_session)
 
 @pytest.mark.asyncio
-async def test_create_reclamante(repository: ReclamanteRepositoryImpl):
-    reclamante = Reclamante(nome="Repo Test", documento="555", telefone="444")
-    created_reclamante = await repository.create(reclamante)
-    assert created_reclamante.id is not None
-    assert created_reclamante.nome == "Repo Test"
+class TestReclamanteRepositoryImpl:
+    """Testes de integração para ReclamanteRepositoryImpl"""
 
-@pytest.mark.asyncio
-async def test_get_reclamante_by_id(repository: ReclamanteRepositoryImpl):
-    reclamante = Reclamante(nome="Get Test", documento="666", telefone="333")
-    created_reclamante = await repository.create(reclamante)
-    
-    found_reclamante = await repository.get_by_id(created_reclamante.id)
-    assert found_reclamante is not None
-    assert found_reclamante.id == created_reclamante.id
-    assert found_reclamante.nome == "Get Test"
+    async def test_criar_reclamante(self, test_session):
+        """Testa criação de reclamante no banco de dados"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
 
-@pytest.mark.asyncio
-async def test_get_all_reclamantes(repository: ReclamanteRepositoryImpl):
-    # Limpa a tabela para garantir um estado limpo
-    async with repository.session.begin():
-        await repository.session.execute(ReclamanteModel.__table__.delete())
+        # Act
+        reclamante_criado = await repository.create(
+            criar_reclamante(nome="Repo Test", documento="555", telefone="444")
+        )
 
-    reclamante1 = Reclamante(nome="List Test 1", documento="777", telefone="222")
-    reclamante2 = Reclamante(nome="List Test 2", documento="888", telefone="111")
-    await repository.create(reclamante1)
-    await repository.create(reclamante2)
+        # Assert
+        assert reclamante_criado.id is not None
+        assert reclamante_criado.nome == "Repo Test"
+        assert reclamante_criado.documento == "555"
+        assert reclamante_criado.telefone == "444"
 
-    reclamantes = await repository.get_all(0, 10)
-    assert len(reclamantes) == 2
-    assert reclamantes[0].nome == "List Test 1"
-    assert reclamantes[1].nome == "List Test 2"
+    async def test_buscar_reclamante_por_id(self, test_session):
+        """Testa busca de reclamante por ID"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        reclamante_criado = await repository.create(
+            criar_reclamante(nome="Get Test", documento="666", telefone="333")
+        )
 
-@pytest.mark.asyncio
-async def test_update_reclamante(repository: ReclamanteRepositoryImpl):
-    reclamante = Reclamante(nome="Update Old", documento="999", telefone="000")
-    created_reclamante = await repository.create(reclamante)
+        # Act
+        encontrado = await repository.get_by_id(reclamante_criado.id)
 
-    reclamante_atualizado = Reclamante(id=created_reclamante.id, nome="Update New", documento="999", telefone="123")
-    updated_reclamante = await repository.update(created_reclamante.id, reclamante_atualizado)
+        # Assert
+        assert encontrado is not None
+        assert encontrado.id == reclamante_criado.id
+        assert encontrado.nome == "Get Test"
+        assert encontrado.documento == "666"
 
-    assert updated_reclamante is not None
-    assert updated_reclamante.nome == "Update New"
-    assert updated_reclamante.telefone == "123"
+    async def test_buscar_reclamante_por_id_inexistente(self, test_session):
+        """Testa busca por ID inexistente"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
 
-@pytest.mark.asyncio
-async def test_delete_reclamante(repository: ReclamanteRepositoryImpl):
-    reclamante = Reclamante(nome="Delete Test", documento="101", telefone="212")
-    created_reclamante = await repository.create(reclamante)
+        # Act
+        encontrado = await repository.get_by_id(9999)
 
-    deleted = await repository.delete(created_reclamante.id)
-    assert deleted is True
+        # Assert
+        assert encontrado is None
 
-    not_found_reclamante = await repository.get_by_id(created_reclamante.id)
-    assert not_found_reclamante is None
+    async def test_listar_todos_reclamantes(self, test_session):
+        """Testa listagem de todos os reclamantes"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        await repository.create(criar_reclamante(nome="List Test 1", documento="777", telefone="222"))
+        await repository.create(criar_reclamante(nome="List Test 2", documento="888", telefone="111"))
+
+        # Act
+        reclamantes = await repository.get_all(0, 10)
+
+        # Assert
+        assert len(reclamantes) == 2
+        assert reclamantes[0].nome == "List Test 1"
+        assert reclamantes[1].nome == "List Test 2"
+
+    async def test_listar_reclamantes_com_paginacao(self, test_session):
+        """Testa listagem com paginação"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+
+        for i in range(6):
+            await repository.create(
+                criar_reclamante(
+                    nome=f"Pag {i}",
+                    documento=f"D{i}",
+                    telefone=f"11{i}",
+                )
+            )
+
+        # Act
+        primeira_pagina = await repository.get_all(skip=0, limit=3)
+        segunda_pagina = await repository.get_all(skip=3, limit=3)
+
+        # Assert
+        assert len(primeira_pagina) == 3
+        assert len(segunda_pagina) == 3
+        assert primeira_pagina[0].id != segunda_pagina[0].id
+
+    async def test_atualizar_reclamante(self, test_session):
+        """Testa atualização de reclamante"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        reclamante_criado = await repository.create(
+            criar_reclamante(nome="Update Old", documento="999", telefone="000")
+        )
+
+        reclamante_atualizado = criar_reclamante(
+            nome="Update New",
+            documento="999",
+            telefone="123",
+        )
+
+        # Act
+        resultado = await repository.update(reclamante_criado.id, reclamante_atualizado)
+
+        # Assert
+        assert resultado is not None
+        assert resultado.nome == "Update New"
+        assert resultado.telefone == "123"
+
+    async def test_atualizar_reclamante_inexistente(self, test_session):
+        """Testa atualização de reclamante inexistente"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+
+        # Act
+        resultado = await repository.update(9999, criar_reclamante(nome="X"))
+
+        # Assert
+        assert resultado is None
+
+    async def test_deletar_reclamante(self, test_session):
+        """Testa exclusão de reclamante"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        reclamante_criado = await repository.create(
+            criar_reclamante(nome="Delete Test", documento="101", telefone="212")
+        )
+
+        # Act
+        deletado = await repository.delete(reclamante_criado.id)
+        buscado = await repository.get_by_id(reclamante_criado.id)
+
+        # Assert
+        assert deletado is True
+        assert buscado is None
+
+    async def test_deletar_reclamante_inexistente(self, test_session):
+        """Testa exclusão de reclamante inexistente"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+
+        # Act
+        resultado = await repository.delete(9999)
+
+        # Assert
+        assert resultado is False
+
+    async def test_contar_total_de_reclamantes(self, test_session):
+        """Testa contagem total de reclamantes"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        for i in range(4):
+            await repository.create(
+                criar_reclamante(
+                    nome=f"Count {i}",
+                    documento=f"DOC{i}",
+                    telefone=f"TEL{i}",
+                )
+            )
+
+        # Act
+        total = await repository.count()
+
+        # Assert
+        assert total == 4
+
+    async def test_contagem_reflete_delete(self, test_session):
+        """Testa que a contagem é atualizada após exclusão"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        primeiro = await repository.create(criar_reclamante(nome="A", documento="A", telefone="A"))
+        await repository.create(criar_reclamante(nome="B", documento="B", telefone="B"))
+
+        # Act
+        total_antes = await repository.count()
+        await repository.delete(primeiro.id)
+        total_depois = await repository.count()
+
+        # Assert
+        assert total_antes == 2
+        assert total_depois == 1
+
+    async def test_conversao_model_para_entidade_preserva_campos(self, test_session):
+        """Testa conversão model->entidade de forma indireta"""
+        # Arrange
+        repository = ReclamanteRepositoryImpl(test_session)
+        criado = await repository.create(
+            criar_reclamante(nome="Conversao", documento="DOC-1", telefone="11912345678")
+        )
+
+        # Act
+        encontrado = await repository.get_by_id(criado.id)
+
+        # Assert
+        assert encontrado is not None
+        assert encontrado.id == criado.id
+        assert encontrado.nome == "Conversao"
+        assert encontrado.documento == "DOC-1"
+        assert encontrado.telefone == "11912345678"
