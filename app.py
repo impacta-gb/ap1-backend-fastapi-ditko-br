@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 # rotas
 from item.src.presentation.api.routes import item_routes
@@ -25,6 +26,14 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Middleware para tratamento de exceções
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"message": str(exc)},
+    )
 
 # Inclui as rotas
 app.include_router(item_routes.router, prefix="/api/v1/items")
