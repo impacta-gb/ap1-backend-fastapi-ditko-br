@@ -29,7 +29,7 @@ app = FastAPI(
 # Inclui as rotas
 app.include_router(item_routes.router, prefix="/api/v1/items")
 app.include_router(responsavel_routes.router, prefix="/api/v1/responsaveis")
-app.include_router(local_routes.router, prefix="/api/v1/local")
+app.include_router(local_routes.router, prefix="/api/v1/locais")
 
 
 @app.get("/")
