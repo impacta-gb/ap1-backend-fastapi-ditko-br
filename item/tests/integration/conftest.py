@@ -5,12 +5,9 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-# Import Base from all models to ensure all tables are created
-from item.src.infrastructure.database.config import Base as item_base
-from local.src.infrastructure.database.config import Base as local_base
-from responsavel.src.infrastructure.database.config import Base as responsavel_base
-from devolucao.src.infrastructure.database.config import Base as devolucao_base
-from reclamante.src.infrastructure.database.config import Base as reclamante_base
+# Importa a Base e o modelo para que a tabela seja reconhecida
+from item.src.infrastructure.database.config import Base
+from item.src.infrastructure.database.models import ItemModel
 
 
 # URL do banco de dados de teste (usa SQLite em memória)
