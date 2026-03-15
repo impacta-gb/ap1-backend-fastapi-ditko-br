@@ -31,18 +31,18 @@ async def create_item(
     """Cria um novo item (status inicial sempre será 'disponivel')"""
     repository = ItemRepositoryImpl(session)
     use_case = CreateItemUseCase(repository)
-    
-    item = Item(
-        nome=item_data.nome,
-        categoria=item_data.categoria,
-        data_encontro=item_data.data_encontro,
-        descricao=item_data.descricao,
-        status="disponivel",  # Use case garante que seja sempre disponivel
-        local_id=item_data.local_id,
-        responsavel_id=item_data.responsavel_id
-    )
-    
+
     try:
+        item = Item(
+            nome=item_data.nome,
+            categoria=item_data.categoria,
+            data_encontro=item_data.data_encontro,
+            descricao=item_data.descricao,
+            status="disponivel",  # Use case garante que seja sempre disponivel
+            local_id=item_data.local_id,
+            responsavel_id=item_data.responsavel_id
+        )
+
         created_item = await use_case.execute(item)
         return created_item
     except ValueError as e:
@@ -58,16 +58,19 @@ async def get_all_items(
     """Lista todos os itens com paginação"""
     repository = ItemRepositoryImpl(session)
     use_case = GetAllItemsUseCase(repository)
-    
-    items = await use_case.execute(skip, limit)
-    total = await repository.count()
-    
-    return ItemListResponse(
-        items=items,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
+
+    try:
+        items = await use_case.execute(skip, limit)
+        total = await repository.count()
+
+        return ItemListResponse(
+            items=items,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/categoria/{categoria}", response_model=List[ItemResponse])
@@ -78,9 +81,12 @@ async def get_items_by_categoria(
     """Busca itens por categoria"""
     repository = ItemRepositoryImpl(session)
     use_case = GetItemsByCategoriaUseCase(repository)
-    
-    items = await use_case.execute(categoria)
-    return items
+
+    try:
+        items = await use_case.execute(categoria)
+        return items
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/status/{status_value}", response_model=List[ItemResponse])
@@ -91,9 +97,12 @@ async def get_items_by_status(
     """Busca itens por status"""
     repository = ItemRepositoryImpl(session)
     use_case = GetItemsByStatusUseCase(repository)
-    
-    items = await use_case.execute(status_value)
-    return items
+
+    try:
+        items = await use_case.execute(status_value)
+        return items
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{item_id}", response_model=ItemResponse)
@@ -104,16 +113,19 @@ async def get_item(
     """Busca um item por ID"""
     repository = ItemRepositoryImpl(session)
     use_case = GetItemByIdUseCase(repository)
-    
-    item = await use_case.execute(item_id)
-    
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Item com ID {item_id} não encontrado"
-        )
-    
-    return item
+
+    try:
+        item = await use_case.execute(item_id)
+
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Item com ID {item_id} não encontrado"
+            )
+
+        return item
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{item_id}", response_model=ItemResponse)
@@ -162,13 +174,16 @@ async def delete_item(
     """Remove um item"""
     repository = ItemRepositoryImpl(session)
     use_case = DeleteItemUseCase(repository)
-    
-    deleted = await use_case.execute(item_id)
-    
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Item com ID {item_id} não encontrado"
-        )
-    
-    return None
+
+    try:
+        deleted = await use_case.execute(item_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Item com ID {item_id} não encontrado"
+            )
+
+        return None
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
