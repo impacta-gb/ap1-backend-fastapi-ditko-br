@@ -193,7 +193,7 @@ class TestGetItemByIdAPI:
         
         # Assert
         assert response.status_code == 400
-        assert "maior que zero" in response.json()["message"].lower()
+        assert "maior que zero" in response.json()["detail"].lower()
     
     def test_buscar_item_com_id_string(self, client):
         """Testa que ID não numérico retorna 422"""
@@ -485,7 +485,7 @@ class TestFilterItemsAPI:
         
         # Assert
         assert response.status_code == 400
-        assert "inválido" in response.json()["message"].lower()
+        assert "inválido" in response.json()["detail"].lower()
 
 
 class TestAPIResponseFormat:
