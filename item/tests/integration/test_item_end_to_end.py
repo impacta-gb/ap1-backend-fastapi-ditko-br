@@ -4,8 +4,8 @@ Testa a integração entre Use Cases, Repository e Database
 """
 import pytest
 from datetime import datetime, timedelta
-from src.domain.entities.item import Item
-from src.application.use_cases.item_use_cases import (
+from item.src.domain.entities.item import Item
+from item.src.application.use_cases.item_use_cases import (
     CreateItemUseCase,
     GetItemByIdUseCase,
     GetAllItemsUseCase,
@@ -14,7 +14,7 @@ from src.application.use_cases.item_use_cases import (
     GetItemsByCategoriaUseCase,
     GetItemsByStatusUseCase
 )
-from src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
+from item.src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
 
 
 @pytest.mark.asyncio
