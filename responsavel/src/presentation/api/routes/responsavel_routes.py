@@ -32,15 +32,15 @@ async def create_responsavel(
     """Cria um novo responsável (ativo inicial sempre será True)"""
     repository = ResponsavelRepositoryImpl(session)
     use_case = CreateResponsavelUseCase(repository)
-    
-    responsavel = Responsavel(
-        nome=responsavel_data.nome,
-        cargo=responsavel_data.cargo,
-        telefone=responsavel_data.telefone,
-        ativo=True
-    )
 
     try:
+        responsavel = Responsavel(
+            nome=responsavel_data.nome,
+            cargo=responsavel_data.cargo,
+            telefone=responsavel_data.telefone,
+            ativo=True
+        )
+
         created_responsavel = await use_case.execute(responsavel)
         return created_responsavel
     except ValueError as e:
@@ -56,15 +56,18 @@ async def get_all_responsaveis(
     repository = ResponsavelRepositoryImpl(session)
     use_case = GetAllResponsaveisUseCase(repository)
 
-    responsaveis = await use_case.execute(skip, limit)
-    total = await repository.count()
+    try:
+        responsaveis = await use_case.execute(skip, limit)
+        total = await repository.count()
 
-    return ResponsavelListResponse(
-        responsaveis=responsaveis,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
+        return ResponsavelListResponse(
+            responsaveis=responsaveis,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/ativo/{ativo_value}", response_model=List[ResponsavelResponse])
@@ -75,9 +78,12 @@ async def get_responsaveis_by_ativo(
     """Busca responsáveis por status ativo"""
     repository = ResponsavelRepositoryImpl(session)
     use_case = GetResponsaveisByAtivoUseCase(repository)
-    
-    responsaveis = await use_case.execute(ativo_value)
-    return responsaveis
+
+    try:
+        responsaveis = await use_case.execute(ativo_value)
+        return responsaveis
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/{responsavel_id}", response_model=ResponsavelResponse)
@@ -88,16 +94,19 @@ async def get_responsavel(
     """Busca um responsável por ID"""
     repository = ResponsavelRepositoryImpl(session)
     use_case = GetResponsavelByIdUseCase(repository)
-    
-    responsavel = await use_case.execute(responsavel_id)
-    
-    if not responsavel:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Responsável com ID {responsavel_id} não encontrado"
-        )
-    
-    return responsavel
+
+    try:
+        responsavel = await use_case.execute(responsavel_id)
+
+        if not responsavel:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Responsável com ID {responsavel_id} não encontrado"
+            )
+
+        return responsavel
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{responsavel_id}", response_model=ResponsavelResponse)
@@ -225,13 +234,16 @@ async def delete_responsavel(
     """Remove um responsável"""
     repository = ResponsavelRepositoryImpl(session)
     use_case = DeleteResponsavelUseCase(repository)
-    
-    deleted = await use_case.execute(responsavel_id)
-    
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Responsável com ID {responsavel_id} não encontrado"
-        )
-    
-    return None
+
+    try:
+        deleted = await use_case.execute(responsavel_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Responsável com ID {responsavel_id} não encontrado"
+            )
+
+        return None
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
