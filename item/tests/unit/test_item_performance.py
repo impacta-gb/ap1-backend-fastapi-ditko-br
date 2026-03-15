@@ -125,9 +125,15 @@ class TestPerformanceListagem:
         await use_case.execute(skip=9900, limit=100)
         tempo2 = time.time() - inicio2
         
+        diferenca = 0.0
         # Assert - Tempos devem ser similares (diferença < 50%)
-        diferenca = abs(tempo1 - tempo2) / max(tempo1, tempo2)
-        assert diferenca < 0.5
+        if max(tempo1, tempo2) > 0:
+            diferenca = abs(tempo1 - tempo2) / max(tempo1, tempo2)
+            assert diferenca < 0.5
+        else:
+            # Se ambos os tempos forem zero, a diferença também é zero
+            assert tempo1 == tempo2
+
         print(f"\nTempo primeira página: {tempo1:.4f}s")
         print(f"Tempo última página: {tempo2:.4f}s")
         print(f"Diferença: {diferenca*100:.2f}%")

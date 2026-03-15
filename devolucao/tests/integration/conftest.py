@@ -1,13 +1,11 @@
 """
-Configurações e fixtures para testes de integração
+Configurações e fixtures para testes de integração de Devolucao
 """
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-
-# Importa a Base e o modelo para que a tabela seja reconhecida
-from item.src.infrastructure.database.config import Base
-from item.src.infrastructure.database.models import ItemModel
+from devolucao.src.infrastructure.database.config import Base
+from devolucao.src.infrastructure.database.models import DevolucaoModel
 
 
 # URL do banco de dados de teste (usa SQLite em memória)
@@ -22,25 +20,17 @@ async def test_engine():
         echo=False,
         future=True
     )
-    
+
     # Cria as tabelas
     async with engine.begin() as conn:
-        await conn.run_sync(local_base.metadata.create_all)
-        await conn.run_sync(responsavel_base.metadata.create_all)
-        await conn.run_sync(item_base.metadata.create_all)
-        await conn.run_sync(devolucao_base.metadata.create_all)
-        await conn.run_sync(reclamante_base.metadata.create_all)
-    
+        await conn.run_sync(Base.metadata.create_all)
+
     yield engine
-    
+
     # Limpa as tabelas após os testes
     async with engine.begin() as conn:
-        await conn.run_sync(item_base.metadata.drop_all)
-        await conn.run_sync(responsavel_base.metadata.drop_all)
-        await conn.run_sync(local_base.metadata.drop_all)
-        await conn.run_sync(devolucao_base.metadata.drop_all)
-        await conn.run_sync(reclamante_base.metadata.drop_all)
-    
+        await conn.run_sync(Base.metadata.drop_all)
+
     await engine.dispose()
 
 
@@ -52,7 +42,7 @@ async def test_session(test_engine):
         class_=AsyncSession,
         expire_on_commit=False
     )
-    
+
     async with async_session_maker() as session:
         yield session
         await session.rollback()
