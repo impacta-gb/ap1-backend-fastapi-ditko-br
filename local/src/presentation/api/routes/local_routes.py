@@ -29,15 +29,14 @@ async def create_local(
     """Cria um novo local"""
     repository = LocalRepositoryImpl(session)
     use_case = CreateLocalUseCase(repository)
-    
-    local = Local(
-        tipo=local_data.tipo,
-        bairro=local_data.bairro,
-        descricao=local_data.descricao
-        
-    )
-    
+
     try:
+        local = Local(
+            tipo=local_data.tipo,
+            bairro=local_data.bairro,
+            descricao=local_data.descricao
+        )
+
         created_local = await use_case.execute(local)
         return created_local
     except ValueError as e:
@@ -52,16 +51,19 @@ async def get_all_locals(
     """Lista todos os locais com paginação"""
     repository = LocalRepositoryImpl(session)
     use_case = GetAllLocalsUseCase(repository)
-    
-    locals = await use_case.execute(skip, limit)
-    total = await repository.count()
-    
-    return LocalListResponse(
-        locals=locals,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
+
+    try:
+        locals = await use_case.execute(skip, limit)
+        total = await repository.count()
+
+        return LocalListResponse(
+            locals=locals,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.get("/bairro/{bairro}", response_model=List[LocalResponse])
 async def get_locals_by_bairro(
@@ -71,9 +73,12 @@ async def get_locals_by_bairro(
     """Busca local por bairro"""
     repository = LocalRepositoryImpl(session)
     use_case = GetLocalsByBairroUseCase(repository)
-    
-    locals = await use_case.execute(bairro)
-    return locals
+
+    try:
+        locals = await use_case.execute(bairro)
+        return locals
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.get("/{local_id}", response_model=LocalResponse)
 async def get_local(
@@ -83,16 +88,19 @@ async def get_local(
     """Busca um local por ID"""
     repository = LocalRepositoryImpl(session)
     use_case = GetLocalByIdUseCase(repository)
-    
-    local = await use_case.execute(local_id)
-    
-    if not local:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"local com ID {local_id} não encontrado"
-        )
-    
-    return local
+
+    try:
+        local = await use_case.execute(local_id)
+
+        if not local:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"local com ID {local_id} não encontrado"
+            )
+
+        return local
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.put("/{local_id}", response_model=LocalResponse)
 async def update_local(
