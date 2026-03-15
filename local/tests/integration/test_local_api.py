@@ -3,16 +3,16 @@ Testes de integração da API REST de Local
 Testa os endpoints HTTP, validações, status codes e serialização
 """
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
-from local.src.infrastructure.database.config import Base
-from local.src.infrastructure.database.models import LocalModel
+from local.src.infrastructure.database.config import Base, get_session
 from app import app
 
 
 # Fixture para criar um banco de dados de teste em memória
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_db():
     """Cria um banco de dados SQLite em memória para testes"""
     engine = create_async_engine(
@@ -37,14 +37,20 @@ async def test_db():
 
 
 @pytest.fixture
-def client():
+def client(test_db):
     """Cria um cliente de teste para a API"""
+    async def override_get_session():
+        async with test_db() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = override_get_session
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
+    app.dependency_overrides.pop(get_session, None)
 
 
 class TestCreateLocalAPI:
-    """Testes para POST /api/v1/local"""
+    """Testes para POST /api/v1/locais"""
 
     def test_criar_local_com_sucesso(self, client):
         """Testa criação de local via API com dados válidos"""
@@ -56,7 +62,7 @@ class TestCreateLocalAPI:
         }
 
         # Act
-        response = client.post("/api/v1/local/", json=local_data)
+        response = client.post("/api/v1/locais/", json=local_data)
 
         # Assert
         assert response.status_code == 201
@@ -76,7 +82,7 @@ class TestCreateLocalAPI:
         }
 
         # Act
-        response = client.post("/api/v1/local/", json=local_data)
+        response = client.post("/api/v1/locais/", json=local_data)
 
         # Assert
         assert response.status_code == 422
@@ -91,7 +97,7 @@ class TestCreateLocalAPI:
         }
 
         # Act
-        response = client.post("/api/v1/local/", json=local_data)
+        response = client.post("/api/v1/locais/", json=local_data)
 
         # Assert
         assert response.status_code in [400, 422]
@@ -106,7 +112,7 @@ class TestCreateLocalAPI:
         }
 
         # Act
-        response = client.post("/api/v1/local/", json=local_data)
+        response = client.post("/api/v1/locais/", json=local_data)
 
         # Assert
         assert response.status_code in [400, 422]
@@ -121,14 +127,14 @@ class TestCreateLocalAPI:
         }
 
         # Act
-        response = client.post("/api/v1/local/", json=local_data)
+        response = client.post("/api/v1/locais/", json=local_data)
 
         # Assert
         assert response.status_code in [400, 422]
 
 
 class TestGetLocalByIdAPI:
-    """Testes para GET /api/v1/local/{local_id}"""
+    """Testes para GET /api/v1/locais/{local_id}"""
 
     def test_buscar_local_existente(self, client):
         """Testa busca de local que existe"""
@@ -138,11 +144,11 @@ class TestGetLocalByIdAPI:
             "descricao": "Parque Ibirapuera",
             "bairro": "Moema"
         }
-        create_response = client.post("/api/v1/local/", json=create_data)
+        create_response = client.post("/api/v1/locais/", json=create_data)
         local_id = create_response.json()["id"]
 
         # Act
-        response = client.get(f"/api/v1/local/{local_id}")
+        response = client.get(f"/api/v1/locais/{local_id}")
 
         # Assert
         assert response.status_code == 200
@@ -154,7 +160,7 @@ class TestGetLocalByIdAPI:
     def test_buscar_local_inexistente(self, client):
         """Testa busca de local que não existe"""
         # Act
-        response = client.get("/api/v1/local/9999")
+        response = client.get("/api/v1/locais/9999")
 
         # Assert
         assert response.status_code == 404
@@ -162,19 +168,19 @@ class TestGetLocalByIdAPI:
     def test_buscar_local_com_id_string(self, client):
         """Testa busca de local com ID do tipo string"""
         # Act
-        response = client.get("/api/v1/local/abc")
+        response = client.get("/api/v1/locais/abc")
 
         # Assert
         assert response.status_code == 422
 
 
 class TestGetAllLocaisAPI:
-    """Testes para GET /api/v1/local"""
+    """Testes para GET /api/v1/locais"""
 
     def test_listar_todos_locais(self, client):
         """Testa listagem de locais"""
         # Act
-        response = client.get("/api/v1/local/")
+        response = client.get("/api/v1/locais/")
 
         # Assert
         assert response.status_code == 200
@@ -185,7 +191,7 @@ class TestGetAllLocaisAPI:
     def test_listar_locais_com_paginacao(self, client):
         """Testa listagem com parâmetros de paginação"""
         # Act
-        response = client.get("/api/v1/local/?skip=0&limit=10")
+        response = client.get("/api/v1/locais/?skip=0&limit=10")
 
         # Assert
         assert response.status_code == 200
@@ -196,7 +202,7 @@ class TestGetAllLocaisAPI:
     def test_listar_locais_com_skip_negativo(self, client):
         """Testa que skip negativo retorna erro"""
         # Act
-        response = client.get("/api/v1/local/?skip=-1")
+        response = client.get("/api/v1/locais/?skip=-1")
 
         # Assert
         assert response.status_code in [400, 500]
@@ -204,14 +210,14 @@ class TestGetAllLocaisAPI:
     def test_listar_locais_com_limit_invalido(self, client):
         """Testa que limit inválido retorna erro"""
         # Act
-        response = client.get("/api/v1/local/?limit=0")
+        response = client.get("/api/v1/locais/?limit=0")
 
         # Assert
         assert response.status_code in [400, 500]
 
 
 class TestUpdateLocalAPI:
-    """Testes para PUT /api/v1/local/{local_id}"""
+    """Testes para PUT /api/v1/locais/{local_id}"""
 
     def test_atualizar_local_com_sucesso(self, client):
         """Testa atualização de local via API"""
@@ -221,7 +227,7 @@ class TestUpdateLocalAPI:
             "descricao": "Estação Original",
             "bairro": "Centro"
         }
-        create_response = client.post("/api/v1/local/", json=create_data)
+        create_response = client.post("/api/v1/locais/", json=create_data)
         local_id = create_response.json()["id"]
 
         # Act
@@ -230,7 +236,7 @@ class TestUpdateLocalAPI:
             "descricao": "Estação Atualizada",
             "bairro": "Centro"
         }
-        response = client.put(f"/api/v1/local/{local_id}", json=update_data)
+        response = client.put(f"/api/v1/locais/{local_id}", json=update_data)
 
         # Assert
         assert response.status_code == 200
@@ -248,14 +254,14 @@ class TestUpdateLocalAPI:
         }
 
         # Act
-        response = client.put("/api/v1/local/9999", json=update_data)
+        response = client.put("/api/v1/locais/9999", json=update_data)
 
         # Assert
         assert response.status_code == 404
 
 
 class TestDeleteLocalAPI:
-    """Testes para DELETE /api/v1/local/{local_id}"""
+    """Testes para DELETE /api/v1/locais/{local_id}"""
 
     def test_deletar_local_com_sucesso(self, client):
         """Testa exclusão de local via API"""
@@ -265,30 +271,30 @@ class TestDeleteLocalAPI:
             "descricao": "Terminal Para Deletar",
             "bairro": "Brás"
         }
-        create_response = client.post("/api/v1/local/", json=create_data)
+        create_response = client.post("/api/v1/locais/", json=create_data)
         local_id = create_response.json()["id"]
 
         # Act
-        response = client.delete(f"/api/v1/local/{local_id}")
+        response = client.delete(f"/api/v1/locais/{local_id}")
 
         # Assert
         assert response.status_code in [200, 204]
 
         # Verifica que foi deletado
-        get_response = client.get(f"/api/v1/local/{local_id}")
+        get_response = client.get(f"/api/v1/locais/{local_id}")
         assert get_response.status_code == 404
 
     def test_deletar_local_inexistente(self, client):
         """Testa exclusão de local que não existe"""
         # Act
-        response = client.delete("/api/v1/local/9999")
+        response = client.delete("/api/v1/locais/9999")
 
         # Assert
         assert response.status_code == 404
 
 
 class TestGetLocalsByBairroAPI:
-    """Testes para GET /api/v1/local/bairro/{bairro}"""
+    """Testes para GET /api/v1/locais/bairro/{bairro}"""
 
     def test_buscar_por_bairro(self, client):
         """Testa busca de locais por bairro"""
@@ -299,10 +305,10 @@ class TestGetLocalsByBairroAPI:
             {"tipo": "Parque", "descricao": "Parque C", "bairro": "Moema"},
         ]
         for local_data in locais_data:
-            client.post("/api/v1/local/", json=local_data)
+            client.post("/api/v1/locais/", json=local_data)
 
         # Act
-        response = client.get("/api/v1/local/bairro/Centro")
+        response = client.get("/api/v1/locais/bairro/Centro")
 
         # Assert
         assert response.status_code == 200
@@ -314,10 +320,11 @@ class TestGetLocalsByBairroAPI:
     def test_buscar_por_bairro_sem_resultados(self, client):
         """Testa busca por bairro sem resultados retorna lista vazia"""
         # Act
-        response = client.get("/api/v1/local/bairro/BairroxInexistente999")
+        response = client.get("/api/v1/locais/bairro/BairroxInexistente999")
 
         # Assert
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         assert len(data) == 0
+
