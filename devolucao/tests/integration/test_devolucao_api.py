@@ -3,16 +3,16 @@ Testes de integração da API REST de Devolucao
 Testa os endpoints HTTP, validações, status codes e serialização
 """
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
-from devolucao.src.infrastructure.database.config import Base
-from devolucao.src.infrastructure.database.models import DevolucaoModel
+from devolucao.src.infrastructure.database.config import Base, get_session
 from app import app
 
 
 # Fixture para criar um banco de dados de teste em memória
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_db():
     """Cria um banco de dados SQLite em memória para testes"""
     engine = create_async_engine(
@@ -37,10 +37,16 @@ async def test_db():
 
 
 @pytest.fixture
-def client():
+def client(test_db):
     """Cria um cliente de teste para a API"""
+    async def override_get_session():
+        async with test_db() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = override_get_session
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
+    app.dependency_overrides.pop(get_session, None)
 
 
 class TestCreateDevolucaoAPI:

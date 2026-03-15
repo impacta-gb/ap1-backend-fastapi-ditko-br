@@ -35,14 +35,13 @@ async def create_devolucao(
     repository = DevolucaoRepositoryImpl(session)
     use_case = CreateDevolucaoUseCase(repository)
 
-    devolucao = Devolucao(
-        reclamante_id=devolucao_data.reclamante_id,
-        item_id=devolucao_data.item_id,
-        observacao=devolucao_data.observacao,
-        data_devolucao=devolucao_data.data_devolucao
-    )
-
     try:
+        devolucao = Devolucao(
+            reclamante_id=devolucao_data.reclamante_id,
+            item_id=devolucao_data.item_id,
+            observacao=devolucao_data.observacao,
+            data_devolucao=devolucao_data.data_devolucao
+        )
         created = await use_case.execute(devolucao)
         return created
     except ValueError as e:
@@ -96,15 +95,18 @@ async def get_devolucao(
     repository = DevolucaoRepositoryImpl(session)
     use_case = GetDevolucaoByIdUseCase(repository)
 
-    devolucao = await use_case.execute(devolucao_id)
+    try:
+        devolucao = await use_case.execute(devolucao_id)
 
-    if not devolucao:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Devolução com ID {devolucao_id} não encontrada"
-        )
+        if not devolucao:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Devolução com ID {devolucao_id} não encontrada"
+            )
 
-    return devolucao
+        return devolucao
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{devolucao_id}", response_model=DevolucaoResponse)
@@ -184,12 +186,15 @@ async def delete_devolucao(
     repository = DevolucaoRepositoryImpl(session)
     use_case = DeleteDevolucaoUseCase(repository)
 
-    deleted = await use_case.execute(devolucao_id)
+    try:
+        deleted = await use_case.execute(devolucao_id)
 
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Devolução com ID {devolucao_id} não encontrada"
-        )
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Devolução com ID {devolucao_id} não encontrada"
+            )
 
-    return None
+        return None
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
