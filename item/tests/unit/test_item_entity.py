@@ -3,7 +3,7 @@ Testes unitários para a entidade Item
 """
 import pytest
 from datetime import datetime, timedelta
-from src.domain.entities.item import Item
+from item.src.domain.entities.item import Item
 
 
 class TestItemEntity:

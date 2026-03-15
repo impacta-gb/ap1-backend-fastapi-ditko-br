@@ -4,8 +4,8 @@ Testes unitários para os casos de uso de Item
 import pytest
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
-from src.domain.entities.item import Item
-from src.application.use_cases.item_use_cases import (
+from item.src.domain.entities.item import Item
+from item.src.application.use_cases.item_use_cases import (
     CreateItemUseCase,
     GetItemByIdUseCase,
     GetAllItemsUseCase,

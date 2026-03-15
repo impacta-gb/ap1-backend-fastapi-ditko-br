@@ -3,8 +3,8 @@ Testes de integração para o repositório de Item
 """
 import pytest
 from datetime import datetime, timedelta
-from src.domain.entities.item import Item
-from src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
+from item.src.domain.entities.item import Item
+from item.src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
 
 
 @pytest.mark.asyncio
