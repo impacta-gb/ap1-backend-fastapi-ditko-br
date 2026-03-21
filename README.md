@@ -80,11 +80,13 @@ Registro da devolução de um item ao reclamante.
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Kafka](https://img.shields.io/badge/Apache%20Kafka-000000?style=for-the-badge&logo=apachekafka&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=python&logoColor=white)
 ![Poetry](https://img.shields.io/badge/Poetry-60A5FA?style=for-the-badge&logo=poetry&logoColor=white)
 
 - **FastAPI**: Framework web moderno e rápido para construção de APIs REST
 - **Python 3.x**: Linguagem de programação principal
+- **Apache Kafka**: Sistema de mensageria para comunicação assíncrona entre microserviços
 - **Poetry**: Gerenciador de dependências e ambientes virtuais
 - **SQLAlchemy**: ORM para interação com banco de dados
 - **Pydantic**: Validação de dados e serialização
