@@ -18,6 +18,7 @@ from local.src.application.use_cases.local_use_cases import (
 from local.src.domain.entities.local import Local
 from local.src.infrastructure.database.config import get_session
 from local.src.infrastructure.repositories.local_repository_impl import LocalRepositoryImpl
+from local.src.infrastructure.messaging.producer import LocalKafkaProducer
 
 router = APIRouter(tags=["Locais"])
 
@@ -38,6 +39,15 @@ async def create_local(
         )
 
         created_local = await use_case.execute(local)
+
+        producer = LocalKafkaProducer()
+        await producer.publish_local_criado(
+            local_id=created_local.id,
+            tipo=created_local.tipo,
+            bairro=created_local.bairro,
+            descricao=created_local.descricao,
+        )
+
         return created_local
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -133,6 +143,14 @@ async def update_local(
         # Executa a atualização
         update_use_case = UpdateLocalUseCase(repository)
         updated_local = await update_use_case.execute(local_id, existing_local)
+
+        producer = LocalKafkaProducer()
+        await producer.publish_local_atualizado(
+            local_id=updated_local.id,
+            tipo=updated_local.tipo,
+            bairro=updated_local.bairro,
+            descricao=updated_local.descricao,
+        )
         
         return updated_local
     
@@ -154,5 +172,8 @@ async def delete_local(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"local com ID {local_id} não encontrado"
         )
+
+    producer = LocalKafkaProducer()
+    await producer.publish_local_deletado(local_id=local_id)
     
     return None

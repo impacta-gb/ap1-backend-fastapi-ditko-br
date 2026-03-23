@@ -18,11 +18,11 @@ class TestLocalItemEventConsumer:
     
     @pytest.mark.asyncio
     async def test_handle_item_registrado_event(self):
-        """Testa processamento de evento item.registrado"""
+        """Testa processamento de evento item.criado"""
         consumer = ItemEventConsumer()
         
         event = {
-            'event_type': 'item.registrado',
+            'event_type': 'item.criado',
             'aggregate_id': '123',
             'data': {
                 'item_id': '123',
@@ -32,9 +32,9 @@ class TestLocalItemEventConsumer:
             }
         }
         
-        consumer._handle_item_registrado = AsyncMock()
+        consumer._handle_item_criado = AsyncMock()
         await consumer.handle_message(event)
-        consumer._handle_item_registrado.assert_called_once()
+        consumer._handle_item_criado.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_unknown_event_type(self):
@@ -53,10 +53,10 @@ class TestLocalItemEventConsumer:
         """Testa tratamento de erros ao processar mensagem"""
         consumer = ItemEventConsumer()
         
-        consumer._handle_item_registrado = AsyncMock(side_effect=Exception("Erro de teste"))
+        consumer._handle_item_criado = AsyncMock(side_effect=Exception("Erro de teste"))
         
         event = {
-            'event_type': 'item.registrado',
+            'event_type': 'item.criado',
             'data': {'item_id': '123'}
         }
         
