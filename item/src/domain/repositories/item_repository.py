@@ -45,3 +45,38 @@ class ItemRepository(ABC):
     async def count(self) -> int:
         """Conta o total de itens no repositório"""
         pass
+
+    @abstractmethod
+    async def exists_local(self, local_id: int) -> bool:
+        """Verifica se o Local existe na projeção local do módulo Item."""
+        pass
+
+    @abstractmethod
+    async def exists_responsavel(self, responsavel_id: int) -> bool:
+        """Verifica se o Responsável existe na projeção local do módulo Item."""
+        pass
+
+    @abstractmethod
+    async def exists_responsavel_ativo(self, responsavel_id: int) -> bool:
+        """Verifica se o Responsável existe e está ativo na projeção local do módulo Item."""
+        pass
+
+    @abstractmethod
+    async def upsert_local_reference(self, local_id: int, tipo: str, bairro: str, descricao: str) -> None:
+        """Cria/atualiza projeção local de Local via evento."""
+        pass
+
+    @abstractmethod
+    async def delete_local_reference(self, local_id: int) -> None:
+        """Remove Local da projeção local de Item via evento."""
+        pass
+
+    @abstractmethod
+    async def upsert_responsavel_reference(self, responsavel_id: int, nome: str, cargo: str, telefone: str, ativo: bool = True) -> None:
+        """Cria/atualiza projeção local de Responsável via evento."""
+        pass
+
+    @abstractmethod
+    async def delete_responsavel_reference(self, responsavel_id: int) -> None:
+        """Remove Responsável da projeção local de Item via evento."""
+        pass
