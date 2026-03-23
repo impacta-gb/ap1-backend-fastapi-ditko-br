@@ -23,3 +23,32 @@ class ItemModel(Base):
     
     def __repr__(self):
         return f"<Item(id={self.id}, nome='{self.nome}', categoria='{self.categoria}', status='{self.status}')>"
+
+
+class LocalReferenceModel(Base):
+    """Projeção local de Local para validar criação de Item."""
+
+    __tablename__ = "item_locais"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    tipo = Column(String(255), nullable=False)
+    bairro = Column(String(255), nullable=False)
+    descricao = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, onupdate=func.now())
+
+
+class ResponsavelReferenceModel(Base):
+    """Projeção local de Responsável para validar criação de Item."""
+
+    __tablename__ = "item_responsaveis"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(255), nullable=False)
+    cargo = Column(String(255), nullable=False)
+    telefone = Column(String(50), nullable=False)
+    ativo = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, onupdate=func.now())
