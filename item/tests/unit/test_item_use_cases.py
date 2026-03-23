@@ -2,7 +2,7 @@
 Testes unitários para os casos de uso de Item
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from item.src.domain.entities.item import Item
 from item.src.application.use_cases.item_use_cases import (
@@ -170,6 +170,45 @@ class TestCreateItemUseCase:
         # Assert - O use case deve ter mudado o status para disponivel
         assert item.status == "disponivel"
         assert resultado.status == "disponivel"
+
+    @pytest.mark.asyncio
+    async def test_criar_item_com_data_timezone_aware(self):
+        """Garante suporte a data com timezone (ex.: sufixo Z)."""
+        repository_mock = AsyncMock()
+        data_aware = datetime.now(timezone.utc) - timedelta(minutes=10)
+
+        item = Item(
+            nome="Item timezone",
+            categoria="Teste",
+            data_encontro=data_aware,
+            descricao="Descrição teste",
+            status="disponivel",
+            local_id=1,
+            responsavel_id=1
+        )
+
+        item_criado = Item(
+            id=1,
+            nome="Item timezone",
+            categoria="Teste",
+            data_encontro=datetime.now() - timedelta(minutes=10),
+            descricao="Descrição teste",
+            status="disponivel",
+            local_id=1,
+            responsavel_id=1,
+            created_at=datetime.now()
+        )
+
+        repository_mock.exists_local.return_value = True
+        repository_mock.exists_responsavel.return_value = True
+        repository_mock.exists_responsavel_ativo.return_value = True
+        repository_mock.create.return_value = item_criado
+        use_case = CreateItemUseCase(repository_mock)
+
+        resultado = await use_case.execute(item)
+
+        assert resultado.id == 1
+        repository_mock.create.assert_called_once_with(item)
 
 
 class TestGetItemByIdUseCase:
