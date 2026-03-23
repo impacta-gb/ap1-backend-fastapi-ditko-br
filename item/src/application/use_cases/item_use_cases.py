@@ -32,9 +32,25 @@ class CreateItemUseCase:
         
         if item.responsavel_id <= 0:
             raise ValueError("ID do responsável deve ser maior que zero")
-        
-        # TODO: Quando implementar entidades Local e Responsável,
-        # validar se os IDs existem no banco de dados
+
+        # Regra: só cria Item se local e responsável existirem no módulo Item
+        # via projeções sincronizadas por eventos Kafka.
+        if not await self.repository.exists_local(item.local_id):
+            raise ValueError(
+                f"Local com ID {item.local_id} não encontrado no módulo Item. "
+                "Aguarde sincronização do evento de local."
+            )
+
+        if not await self.repository.exists_responsavel(item.responsavel_id):
+            raise ValueError(
+                f"Responsável com ID {item.responsavel_id} não encontrado no módulo Item. "
+                "Aguarde sincronização do evento de responsável."
+            )
+
+        if not await self.repository.exists_responsavel_ativo(item.responsavel_id):
+            raise ValueError(
+                f"Responsável com ID {item.responsavel_id} está inativo e não pode ser usado para registrar item."
+            )
         
         return await self.repository.create(item)
 
