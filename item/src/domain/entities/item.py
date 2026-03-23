@@ -33,6 +33,15 @@ class Item:
     
     def __post_init__(self):
         """Validações da entidade após inicialização"""
+        # Normaliza datetime com timezone para naive no timezone local.
+        # Evita erro ao comparar com datetime.now() (naive) nos use cases.
+        if (
+            isinstance(self.data_encontro, datetime)
+            and self.data_encontro.tzinfo is not None
+            and self.data_encontro.utcoffset() is not None
+        ):
+            self.data_encontro = self.data_encontro.astimezone().replace(tzinfo=None)
+
         if not self.nome or len(self.nome.strip()) == 0:
             raise ValueError("Nome do item é obrigatório")
         
