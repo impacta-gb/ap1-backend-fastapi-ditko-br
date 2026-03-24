@@ -17,6 +17,7 @@ from reclamante.src.application.use_cases.reclamante_use_cases import (
 from reclamante.src.domain.entities.reclamante import Reclamante
 from reclamante.src.infrastructure.database.config import get_session
 from reclamante.src.infrastructure.repositories.reclamante_repository_impl import ReclamanteRepositoryImpl
+from reclamante.src.infrastructure.messaging.producer import ReclamanteKafkaProducer
 
 router = APIRouter(tags=["Reclamantes"])
 
@@ -37,6 +38,16 @@ async def create_reclamante(
             documento=reclamante_data.documento
         )
         created_reclamante = await use_case.execute(reclamante)
+        
+        # Publicar evento de reclamante criado
+        producer = ReclamanteKafkaProducer()
+        await producer.publish_reclamante_criado(
+            reclamante_id=created_reclamante.id,
+            nome=created_reclamante.nome,
+            documento=created_reclamante.documento,
+            telefone=created_reclamante.telefone
+        )
+        
         return created_reclamante
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -109,10 +120,22 @@ async def update_reclamante(
                 detail=f'Reclamante com ID {reclamante_id} não encontrado'
             )
         
-        updated_reclamante_entity = Reclamante(id=reclamante_id,                      nome=reclamante_data.nome,            telefone=reclamante_data.telefone,            documento=reclamante_data.documento)
+        updated_reclamante_entity = Reclamante(id=reclamante_id,
+                      nome=reclamante_data.nome,
+            telefone=reclamante_data.telefone,
+            documento=reclamante_data.documento)
 
         update_use_case = UpdateReclamanteUseCase(repository)
         updated_reclamante = await update_use_case.execute(reclamante_id, updated_reclamante_entity)
+
+        # Publicar evento de reclamante atualizado
+        producer = ReclamanteKafkaProducer()
+        await producer.publish_reclamante_atualizado(
+            reclamante_id=updated_reclamante.id,
+            nome=updated_reclamante.nome,
+            documento=updated_reclamante.documento,
+            telefone=updated_reclamante.telefone
+        )
 
         return updated_reclamante
     
@@ -137,5 +160,8 @@ async def delete_reclamante(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'Reclamante com ID {reclamante_id} não encontrado'
         )
+
+    producer = ReclamanteKafkaProducer()
+    await producer.publish_reclamante_deletado(reclamante_id=reclamante_id)
     
     return None
