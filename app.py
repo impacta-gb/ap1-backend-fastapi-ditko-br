@@ -7,12 +7,17 @@ from responsavel.src.presentation.api.routes import responsavel_routes
 from local.src.presentation.api.routes import local_routes
 from devolucao.src.presentation.api.routes import devolucao_routes
 from reclamante.src.presentation.api.routes import reclamante_routes
+from bootstrap import MessagingBootstrap
 # banco de dados
 from local.src.infrastructure.database.config import init_db as init_db_local
 from item.src.infrastructure.database.config import init_db as init_db_item
 from responsavel.src.infrastructure.database.config import init_db as init_db_responsavel
 from devolucao.src.infrastructure.database.config import init_db as init_db_devolucao
 from reclamante.src.infrastructure.database.config import init_db as init_db_reclamante
+from item.src.application.use_cases.sync_local_projection_use_case import sync_local_projection_for_item
+from item.src.application.use_cases.sync_responsavel_projection_use_case import sync_responsavel_projection_for_item
+from devolucao.src.application.use_cases.sync_item_projection_use_case import sync_item_projection_for_devolucao
+from devolucao.src.application.use_cases.sync_reclamante_projection_use_case import sync_reclamante_projection_for_devolucao
 
 
 @asynccontextmanager
@@ -24,7 +29,25 @@ async def lifespan(app: FastAPI):
     await init_db_item()
     await init_db_devolucao()
     await init_db_reclamante()
-    yield
+
+    # Reconstroi projeções críticas para evitar inconsistência após restart.
+    await sync_local_projection_for_item()
+    await sync_responsavel_projection_for_item()
+    await sync_item_projection_for_devolucao()
+    await sync_reclamante_projection_for_devolucao()
+
+    # Inicializa mensageria (producers/consumers Kafka)
+    messaging_bootstrap = MessagingBootstrap()
+    app.state.messaging_bootstrap = messaging_bootstrap
+    await messaging_bootstrap.start_producers()
+    await messaging_bootstrap.start_consumers()
+
+    try:
+        yield
+    finally:
+        # Garante encerramento limpo da mensageria no shutdown
+        await messaging_bootstrap.stop_consumers()
+        await messaging_bootstrap.stop_producers()
 
 app = FastAPI(
     title="Sistema de Achados e Perdidos",

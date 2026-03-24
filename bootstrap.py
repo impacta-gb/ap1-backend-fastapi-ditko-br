@@ -8,8 +8,8 @@ from devolucao.src.infrastructure.messaging.producer import DevolucaoKafkaProduc
 from reclamante.src.infrastructure.messaging.producer import ReclamanteKafkaProducer
 from responsavel.src.infrastructure.messaging.producer import ResponsavelKafkaProducer
 from local.src.infrastructure.messaging.producer import LocalKafkaProducer
-from item.src.infrastructure.messaging.consumers import DevolucaoEventConsumer
-from devolucao.src.infrastructure.messaging.consumers import ItemEventConsumer as DevolucaoItemEventConsumer
+from item.src.infrastructure.messaging.consumers import DevolucaoEventConsumer, LocalEventConsumer as ItemLocalEventConsumer, ResponsavelEventConsumer as ItemResponsavelEventConsumer
+from devolucao.src.infrastructure.messaging.consumers import ItemEventConsumer as DevolucaoItemEventConsumer, ReclamanteEventConsumer as DevolucaoReclamanteEventConsumer
 from reclamante.src.infrastructure.messaging.consumers import ItemEventConsumer as ReclamanteItemEventConsumer, ResponsavelEventConsumer, DevolucaoEventConsumer as ReclamanteDevolucaoEventConsumer
 from responsavel.src.infrastructure.messaging.consumers import ItemEventConsumer as ResponsavelItemEventConsumer
 from local.src.infrastructure.messaging.consumers import ItemEventConsumer as LocalItemEventConsumer
@@ -31,7 +31,10 @@ class MessagingBootstrap:
         
         # Consumers
         self.devolucao_event_consumer = DevolucaoEventConsumer()
+        self.item_local_event_consumer = ItemLocalEventConsumer()
+        self.item_responsavel_event_consumer = ItemResponsavelEventConsumer()
         self.devolucao_item_event_consumer = DevolucaoItemEventConsumer()
+        self.devolucao_reclamante_event_consumer = DevolucaoReclamanteEventConsumer()
         self.reclamante_item_event_consumer = ReclamanteItemEventConsumer()
         self.reclamante_responsavel_event_consumer = ResponsavelEventConsumer()
         self.reclamante_devolucao_event_consumer = ReclamanteDevolucaoEventConsumer()
@@ -59,7 +62,10 @@ class MessagingBootstrap:
         """Inicia todos os consumers"""
         consumers = [
             (self.devolucao_event_consumer, "Devolucao Event"),
+            (self.item_local_event_consumer, "Item Local Event"),
+            (self.item_responsavel_event_consumer, "Item Responsavel Event"),
             (self.devolucao_item_event_consumer, "Devolucao Item Event"),
+            (self.devolucao_reclamante_event_consumer, "Devolucao Reclamante Event"),
             (self.reclamante_item_event_consumer, "Reclamante Item Event"),
             (self.reclamante_responsavel_event_consumer, "Reclamante Responsavel Event"),
             (self.reclamante_devolucao_event_consumer, "Reclamante Devolucao Event"),
@@ -94,7 +100,10 @@ class MessagingBootstrap:
         """Para todos os consumers"""
         consumers = [
             (self.devolucao_event_consumer, "Devolucao Event"),
+            (self.item_local_event_consumer, "Item Local Event"),
+            (self.item_responsavel_event_consumer, "Item Responsavel Event"),
             (self.devolucao_item_event_consumer, "Devolucao Item Event"),
+            (self.devolucao_reclamante_event_consumer, "Devolucao Reclamante Event"),
             (self.reclamante_item_event_consumer, "Reclamante Item Event"),
             (self.reclamante_responsavel_event_consumer, "Reclamante Responsavel Event"),
             (self.reclamante_devolucao_event_consumer, "Reclamante Devolucao Event"),
