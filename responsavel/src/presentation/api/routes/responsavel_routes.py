@@ -20,6 +20,7 @@ from responsavel.src.application.use_cases.responsavel_use_cases import (
 from responsavel.src.domain.entities.responsavel import Responsavel
 from responsavel.src.infrastructure.database.config import get_session
 from responsavel.src.infrastructure.repositories.responsavel_repository_impl import ResponsavelRepositoryImpl
+from responsavel.src.infrastructure.messaging.producer import ResponsavelKafkaProducer
 
 
 router = APIRouter(tags=["Responsáveis"])
@@ -42,6 +43,15 @@ async def create_responsavel(
         )
 
         created_responsavel = await use_case.execute(responsavel)
+
+        producer = ResponsavelKafkaProducer()
+        await producer.publish_responsavel_criado(
+            responsavel_id=created_responsavel.id,
+            nome=created_responsavel.nome,
+            cargo=created_responsavel.cargo,
+            telefone=created_responsavel.telefone,
+        )
+
         return created_responsavel
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -141,6 +151,15 @@ async def update_responsavel_full(
         # Executa a atualização
         update_use_case = UpdateResponsavelUseCase(repository)
         updated_responsavel = await update_use_case.execute(responsavel_id, updated_responsavel_entity)
+
+        producer = ResponsavelKafkaProducer()
+        await producer.publish_responsavel_atualizado(
+            responsavel_id=updated_responsavel.id,
+            nome=updated_responsavel.nome,
+            cargo=updated_responsavel.cargo,
+            telefone=updated_responsavel.telefone,
+            ativo=updated_responsavel.ativo,
+        )
         
         return updated_responsavel
     
@@ -180,6 +199,15 @@ async def update_responsavel_partial(
         # Executa a atualização
         update_use_case = UpdateResponsavelUseCase(repository)
         updated_responsavel = await update_use_case.execute(responsavel_id, updated_responsavel_entity)
+
+        producer = ResponsavelKafkaProducer()
+        await producer.publish_responsavel_atualizado(
+            responsavel_id=updated_responsavel.id,
+            nome=updated_responsavel.nome,
+            cargo=updated_responsavel.cargo,
+            telefone=updated_responsavel.telefone,
+            ativo=updated_responsavel.ativo,
+        )
         
         return updated_responsavel
     
@@ -219,6 +247,15 @@ async def update_responsavel_status(
         # Executa a atualização
         update_use_case = UpdateResponsavelUseCase(repository)
         updated_responsavel = await update_use_case.execute(responsavel_id, updated_responsavel_entity)
+
+        producer = ResponsavelKafkaProducer()
+        await producer.publish_responsavel_status_alterado(
+            responsavel_id=updated_responsavel.id,
+            nome=updated_responsavel.nome,
+            cargo=updated_responsavel.cargo,
+            telefone=updated_responsavel.telefone,
+            ativo=updated_responsavel.ativo,
+        )
         
         return updated_responsavel
     
@@ -243,6 +280,9 @@ async def delete_responsavel(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Responsável com ID {responsavel_id} não encontrado"
             )
+
+        producer = ResponsavelKafkaProducer()
+        await producer.publish_responsavel_deletado(responsavel_id=responsavel_id)
 
         return None
     except ValueError as e:
