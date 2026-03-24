@@ -12,11 +12,14 @@ class CreateDevolucaoUseCase:
 
     async def execute(self, devolucao: Devolucao) -> Devolucao:
         """
-        Executa a criação de uma nova devolução com  validações de negócio
+        Executa a criação de uma nova devolução com validações de negócio
         
         Regras de negócio:
         - Data da devolução não pode ser futura
         - IDs de reclamante e item devem ser válidos
+        - Item deve existir no sistema
+        - Item não pode ter sido devolvido
+        - Reclamante deve existir no sistema
         """
 
         # Validação: data da devolução não pode ser futura
@@ -29,6 +32,22 @@ class CreateDevolucaoUseCase:
         
         if devolucao.item_id <= 0:
             raise ValueError("ID do item deve ser maior que zero")
+        
+        # Validação: Item deve existir
+        if not await self.repository.exists_item(devolucao.item_id):
+            raise ValueError(f"Item com ID {devolucao.item_id} não encontrado no sistema")
+
+        # Validação: Não pode existir devolução anterior para o mesmo item
+        if await self.repository.exists_devolucao_for_item(devolucao.item_id):
+            raise ValueError(f"Item com ID {devolucao.item_id} já possui devolução registrada")
+        
+        # Validação: Item não pode ter sido devolvido
+        if not await self.repository.exists_item_not_devolvido(devolucao.item_id):
+            raise ValueError(f"Item com ID {devolucao.item_id} já foi devolvido anteriormente")
+        
+        # Validação: Reclamante deve existir
+        if not await self.repository.exists_reclamante(devolucao.reclamante_id):
+            raise ValueError(f"Reclamante com ID {devolucao.reclamante_id} não encontrado no sistema")
         
         return await self.repository.create(devolucao)
     

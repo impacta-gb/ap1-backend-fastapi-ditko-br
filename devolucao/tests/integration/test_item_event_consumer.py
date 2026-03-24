@@ -18,12 +18,12 @@ class TestDevolucaoItemEventConsumer:
     
     @pytest.mark.asyncio
     async def test_handle_item_registrado_event(self):
-        """Testa processamento de evento item.registrado"""
+        """Testa processamento de evento item.criado"""
         consumer = ItemEventConsumer()
         
         # Mock do evento
         event = {
-            'event_type': 'item.registrado',
+            'event_type': 'item.criado',
             'aggregate_id': '123',
             'data': {
                 'item_id': '123',
@@ -34,13 +34,54 @@ class TestDevolucaoItemEventConsumer:
             }
         }
         
-        # Mockar o método _handle_item_registrado
-        consumer._handle_item_registrado = AsyncMock()
+        # Mockar o método _handle_item_criado
+        consumer._handle_item_criado = AsyncMock()
         
         await consumer.handle_message(event)
         
         # Verificar que o método foi chamado
-        consumer._handle_item_registrado.assert_called_once()
+        consumer._handle_item_criado.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_item_atualizado_event(self):
+        """Testa processamento de evento item.atualizado"""
+        consumer = ItemEventConsumer()
+
+        event = {
+            'event_type': 'item.atualizado',
+            'aggregate_id': '123',
+            'data': {
+                'item_id': '123',
+                'status': 'disponivel',
+                'local_id': '1',
+                'responsavel_id': '1'
+            }
+        }
+
+        consumer._handle_item_atualizado = AsyncMock()
+
+        await consumer.handle_message(event)
+
+        consumer._handle_item_atualizado.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_item_deletado_event(self):
+        """Testa processamento de evento item.deletado"""
+        consumer = ItemEventConsumer()
+
+        event = {
+            'event_type': 'item.deletado',
+            'aggregate_id': '123',
+            'data': {
+                'item_id': '123'
+            }
+        }
+
+        consumer._handle_item_deletado = AsyncMock()
+
+        await consumer.handle_message(event)
+
+        consumer._handle_item_deletado.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_handle_unknown_event_type(self):
@@ -61,10 +102,10 @@ class TestDevolucaoItemEventConsumer:
         consumer = ItemEventConsumer()
         
         # Mock que lança exceção
-        consumer._handle_item_registrado = AsyncMock(side_effect=Exception("Erro de teste"))
+        consumer._handle_item_criado = AsyncMock(side_effect=Exception("Erro de teste"))
         
         event = {
-            'event_type': 'item.registrado',
+            'event_type': 'item.criado',
             'data': {'item_id': '123'}
         }
         
