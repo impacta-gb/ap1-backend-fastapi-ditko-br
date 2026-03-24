@@ -19,6 +19,7 @@ from item.src.application.use_cases.item_use_cases import (
 from item.src.domain.entities.item import Item
 from item.src.infrastructure.database.config import get_session
 from item.src.infrastructure.repositories.item_repository_impl import ItemRepositoryImpl
+from item.src.infrastructure.messaging.producer import ItemKafkaProducer
 
 router = APIRouter(tags=["Items"])
 
@@ -44,6 +45,17 @@ async def create_item(
         )
 
         created_item = await use_case.execute(item)
+        
+        # Publicar evento de item criado
+        producer = ItemKafkaProducer()
+        await producer.publish_item_criado(
+            item_id=created_item.id,
+            descricao=created_item.descricao,
+            status=created_item.status,
+            local_id=created_item.local_id,
+            responsavel_id=created_item.responsavel_id
+        )
+        
         return created_item
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -160,6 +172,16 @@ async def update_item(
         update_use_case = UpdateItemUseCase(repository)
         updated_item = await update_use_case.execute(item_id, existing_item)
         
+        # Publicar evento de item atualizado
+        producer = ItemKafkaProducer()
+        await producer.publish_item_atualizado(
+            item_id=updated_item.id,
+            descricao=updated_item.descricao,
+            status=updated_item.status,
+            local_id=updated_item.local_id,
+            responsavel_id=updated_item.responsavel_id
+        )
+        
         return updated_item
     
     except ValueError as e:
@@ -183,6 +205,10 @@ async def delete_item(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Item com ID {item_id} não encontrado"
             )
+
+        # Publicar evento de item deletado para manter projeções sincronizadas.
+        producer = ItemKafkaProducer()
+        await producer.publish_item_deletado(item_id=item_id)
 
         return None
     except ValueError as e:

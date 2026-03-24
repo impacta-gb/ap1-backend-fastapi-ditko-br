@@ -3,7 +3,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from item.src.domain.entities.item import Item
 from item.src.domain.repositories.item_repository import ItemRepository
-from item.src.infrastructure.database.models import ItemModel
+from item.src.infrastructure.database.models import ItemModel, LocalReferenceModel, ResponsavelReferenceModel
 
 
 class ItemRepositoryImpl(ItemRepository):
@@ -125,3 +125,95 @@ class ItemRepositoryImpl(ItemRepository):
         """Conta o total de itens no banco de dados"""
         result = await self.session.execute(select(func.count(ItemModel.id)))
         return result.scalar()
+
+    async def exists_local(self, local_id: int) -> bool:
+        """Verifica se o Local existe na projeção local do módulo Item."""
+        result = await self.session.execute(
+            select(LocalReferenceModel.id).where(LocalReferenceModel.id == local_id)
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def exists_responsavel(self, responsavel_id: int) -> bool:
+        """Verifica se o Responsável existe na projeção local do módulo Item."""
+        result = await self.session.execute(
+            select(ResponsavelReferenceModel.id).where(ResponsavelReferenceModel.id == responsavel_id)
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def exists_responsavel_ativo(self, responsavel_id: int) -> bool:
+        """Verifica se o Responsável existe e está ativo na projeção local do módulo Item."""
+        result = await self.session.execute(
+            select(ResponsavelReferenceModel.id).where(
+                ResponsavelReferenceModel.id == responsavel_id,
+                ResponsavelReferenceModel.ativo == 1,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def upsert_local_reference(self, local_id: int, tipo: str, bairro: str, descricao: str) -> None:
+        """Cria/atualiza projeção local de Local via evento."""
+        result = await self.session.execute(
+            select(LocalReferenceModel).where(LocalReferenceModel.id == local_id)
+        )
+        model = result.scalar_one_or_none()
+
+        if model is None:
+            model = LocalReferenceModel(
+                id=local_id,
+                tipo=tipo,
+                bairro=bairro,
+                descricao=descricao,
+            )
+            self.session.add(model)
+        else:
+            model.tipo = tipo
+            model.bairro = bairro
+            model.descricao = descricao
+
+        await self.session.commit()
+
+    async def delete_local_reference(self, local_id: int) -> None:
+        """Remove Local da projeção local de Item via evento."""
+        result = await self.session.execute(
+            select(LocalReferenceModel).where(LocalReferenceModel.id == local_id)
+        )
+        model = result.scalar_one_or_none()
+
+        if model is not None:
+            await self.session.delete(model)
+            await self.session.commit()
+
+    async def upsert_responsavel_reference(self, responsavel_id: int, nome: str, cargo: str, telefone: str, ativo: bool = True) -> None:
+        """Cria/atualiza projeção local de Responsável via evento."""
+        result = await self.session.execute(
+            select(ResponsavelReferenceModel).where(ResponsavelReferenceModel.id == responsavel_id)
+        )
+        model = result.scalar_one_or_none()
+
+        if model is None:
+            model = ResponsavelReferenceModel(
+                id=responsavel_id,
+                nome=nome,
+                cargo=cargo,
+                telefone=telefone,
+                ativo=1 if ativo else 0,
+            )
+            self.session.add(model)
+        else:
+            model.nome = nome
+            model.cargo = cargo
+            model.telefone = telefone
+            model.ativo = 1 if ativo else 0
+
+        await self.session.commit()
+
+    async def delete_responsavel_reference(self, responsavel_id: int) -> None:
+        """Remove Responsável da projeção local de Item via evento."""
+        result = await self.session.execute(
+            select(ResponsavelReferenceModel).where(ResponsavelReferenceModel.id == responsavel_id)
+        )
+        model = result.scalar_one_or_none()
+
+        if model is not None:
+            await self.session.delete(model)
+            await self.session.commit()
