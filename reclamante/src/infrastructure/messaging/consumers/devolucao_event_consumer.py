@@ -23,6 +23,10 @@ class DevolucaoEventConsumer(KafkaConsumer):
             
             if event_type == 'devolucao.criada':
                 await self._handle_devolucao_criada(message)
+            elif event_type == 'devolucao.atualizada':
+                await self._handle_devolucao_atualizada(message)
+            elif event_type == 'devolucao.deletada':
+                await self._handle_devolucao_deletada(message)
             else:
                 logger.debug(f"Tipo de evento não tratado: {event_type}")
         except Exception as e:
@@ -52,3 +56,27 @@ class DevolucaoEventConsumer(KafkaConsumer):
             
         except Exception as e:
             logger.error(f"Erro ao processar devolução criada: {e}")
+
+    async def _handle_devolucao_atualizada(self, message: dict):
+        """Processa quando uma devolução é atualizada."""
+        try:
+            data = message.get('data', {})
+            devolucao_id = data.get('devolucao_id')
+            if not devolucao_id:
+                logger.warning("devolucao_id não encontrado na mensagem de devolução atualizada")
+                return
+            logger.info(f"Devolução {devolucao_id} atualizada - Reclamante pode processar")
+        except Exception as e:
+            logger.error(f"Erro ao processar devolução atualizada: {e}")
+
+    async def _handle_devolucao_deletada(self, message: dict):
+        """Processa quando uma devolução é deletada."""
+        try:
+            data = message.get('data', {})
+            devolucao_id = data.get('devolucao_id')
+            if not devolucao_id:
+                logger.warning("devolucao_id não encontrado na mensagem de devolução deletada")
+                return
+            logger.info(f"Devolução {devolucao_id} deletada - Reclamante pode processar")
+        except Exception as e:
+            logger.error(f"Erro ao processar devolução deletada: {e}")

@@ -23,6 +23,10 @@ class ResponsavelEventConsumer(KafkaConsumer):
             
             if event_type == 'responsavel.criado':
                 await self._handle_responsavel_criado(message)
+            elif event_type in ('responsavel.atualizado', 'responsavel.status_alterado'):
+                await self._handle_responsavel_atualizado(message)
+            elif event_type == 'responsavel.deletado':
+                await self._handle_responsavel_deletado(message)
             else:
                 logger.debug(f"Tipo de evento não tratado: {event_type}")
         except Exception as e:
@@ -47,3 +51,27 @@ class ResponsavelEventConsumer(KafkaConsumer):
             
         except Exception as e:
             logger.error(f"Erro ao processar responsável criado: {e}")
+
+    async def _handle_responsavel_atualizado(self, message: dict):
+        """Processa quando um responsável é atualizado ou tem status alterado."""
+        try:
+            data = message.get('data', {})
+            responsavel_id = data.get('responsavel_id')
+            if not responsavel_id:
+                logger.warning("responsavel_id não encontrado na mensagem de atualização")
+                return
+            logger.info(f"Responsável {responsavel_id} atualizado/status alterado no sistema")
+        except Exception as e:
+            logger.error(f"Erro ao processar responsável atualizado: {e}")
+
+    async def _handle_responsavel_deletado(self, message: dict):
+        """Processa quando um responsável é deletado."""
+        try:
+            data = message.get('data', {})
+            responsavel_id = data.get('responsavel_id')
+            if not responsavel_id:
+                logger.warning("responsavel_id não encontrado na mensagem de deleção")
+                return
+            logger.info(f"Responsável {responsavel_id} deletado no sistema")
+        except Exception as e:
+            logger.error(f"Erro ao processar responsável deletado: {e}")

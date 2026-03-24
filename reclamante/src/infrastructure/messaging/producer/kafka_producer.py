@@ -45,9 +45,15 @@ class ReclamanteKafkaProducer:
                 logger.info("ReclamanteKafkaProducer parado com sucesso")
             except Exception as e:
                 logger.error(f"Erro ao parar ReclamanteKafkaProducer: {e}")
+
+    async def _ensure_started(self):
+        """Garante producer conectado antes de publicar."""
+        if self.producer is None:
+            await self.start()
     
-    async def publish_reclamante_criado(self, reclamante_id: int, nome: str, email: str, telefone: str):
+    async def publish_reclamante_criado(self, reclamante_id: int, nome: str, documento: str, telefone: str):
         """Publica evento de reclamante criado"""
+        await self._ensure_started()
         if not self.producer:
             logger.warning("Producer não está disponível")
             return
@@ -59,7 +65,7 @@ class ReclamanteKafkaProducer:
                 "data": {
                     "reclamante_id": reclamante_id,
                     "nome": nome,
-                    "email": email,
+                    "documento": documento,
                     "telefone": telefone
                 }
             }
@@ -71,3 +77,54 @@ class ReclamanteKafkaProducer:
             logger.info(f"Evento reclamante.criado publicado para reclamante {reclamante_id}")
         except Exception as e:
             logger.error(f"Erro ao publicar evento reclamante.criado: {e}")
+
+    async def publish_reclamante_atualizado(self, reclamante_id: int, nome: str, documento: str, telefone: str):
+        """Publica evento de reclamante atualizado"""
+        await self._ensure_started()
+        if not self.producer:
+            logger.warning("Producer não está disponível")
+            return
+        
+        try:
+            event = {
+                "event_type": "reclamante.atualizado",
+                "aggregate_id": str(reclamante_id),
+                "data": {
+                    "reclamante_id": reclamante_id,
+                    "nome": nome,
+                    "documento": documento,
+                    "telefone": telefone
+                }
+            }
+            
+            await self.producer.send_and_wait(
+                "reclamante_events",
+                json.dumps(event).encode('utf-8')
+            )
+            logger.info(f"Evento reclamante.atualizado publicado para reclamante {reclamante_id}")
+        except Exception as e:
+            logger.error(f"Erro ao publicar evento reclamante.atualizado: {e}")
+
+    async def publish_reclamante_deletado(self, reclamante_id: int):
+        """Publica evento de reclamante deletado"""
+        await self._ensure_started()
+        if not self.producer:
+            logger.warning("Producer não está disponível")
+            return
+
+        try:
+            event = {
+                "event_type": "reclamante.deletado",
+                "aggregate_id": str(reclamante_id),
+                "data": {
+                    "reclamante_id": reclamante_id,
+                }
+            }
+
+            await self.producer.send_and_wait(
+                "reclamante_events",
+                json.dumps(event).encode('utf-8')
+            )
+            logger.info(f"Evento reclamante.deletado publicado para reclamante {reclamante_id}")
+        except Exception as e:
+            logger.error(f"Erro ao publicar evento reclamante.deletado: {e}")
