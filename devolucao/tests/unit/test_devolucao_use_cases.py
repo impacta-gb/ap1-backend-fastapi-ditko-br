@@ -2,7 +2,7 @@
 Testes unitários para os casos de uso de Devolucao
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from devolucao.src.application.use_cases.devolucao_use_cases import (
     CreateDevolucaoUseCase,
@@ -46,12 +46,48 @@ class TestCreateDevolucaoUseCase:
         devolucao = criar_devolucao_valida()
         devolucao_salva = criar_devolucao_valida()
         devolucao_salva.id = 1
+        mock_repository.exists_item.return_value = True
+        mock_repository.exists_devolucao_for_item.return_value = False
+        mock_repository.exists_item_not_devolvido.return_value = True
+        mock_repository.exists_reclamante.return_value = True
         mock_repository.create.return_value = devolucao_salva
 
         # Act
         resultado = await use_case.execute(devolucao)
 
         # Assert
+        assert resultado.id == 1
+        mock_repository.create.assert_called_once_with(devolucao)
+
+    @pytest.mark.asyncio
+    async def test_criar_devolucao_duplicada_para_mesmo_item_falha(self, use_case, mock_repository):
+        """Impede registrar mais de uma devolução para o mesmo item."""
+        devolucao = criar_devolucao_valida(item_id=10)
+        mock_repository.exists_item.return_value = True
+        mock_repository.exists_devolucao_for_item.return_value = True
+
+        with pytest.raises(ValueError, match="já possui devolução registrada"):
+            await use_case.execute(devolucao)
+
+        mock_repository.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_criar_devolucao_com_data_timezone_aware_sucesso(self, use_case, mock_repository):
+        """Garante suporte a payload com timezone (ex.: sufixo Z)."""
+        devolucao = criar_devolucao_valida(
+            data_devolucao=datetime.now(timezone.utc) - timedelta(minutes=5)
+        )
+        devolucao_salva = criar_devolucao_valida()
+        devolucao_salva.id = 1
+
+        mock_repository.exists_item.return_value = True
+        mock_repository.exists_devolucao_for_item.return_value = False
+        mock_repository.exists_item_not_devolvido.return_value = True
+        mock_repository.exists_reclamante.return_value = True
+        mock_repository.create.return_value = devolucao_salva
+
+        resultado = await use_case.execute(devolucao)
+
         assert resultado.id == 1
         mock_repository.create.assert_called_once_with(devolucao)
 

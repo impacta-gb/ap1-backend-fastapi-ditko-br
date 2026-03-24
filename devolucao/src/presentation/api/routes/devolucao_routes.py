@@ -21,6 +21,7 @@ from devolucao.src.application.use_cases.devolucao_use_cases import (
 from devolucao.src.domain.entities.devolucao import Devolucao
 from devolucao.src.infrastructure.database.config import get_session
 from devolucao.src.infrastructure.repositories.devolucao_repository_impl import DevolucaoRepositoryImpl
+from devolucao.src.infrastructure.messaging.producer import DevolucaoKafkaProducer
 
 
 router = APIRouter(tags=["Devoluções"])
@@ -43,6 +44,15 @@ async def create_devolucao(
             data_devolucao=devolucao_data.data_devolucao
         )
         created = await use_case.execute(devolucao)
+
+        # Publica evento para atualizar os módulos interessados (ex.: item).
+        producer = DevolucaoKafkaProducer()
+        await producer.publish_devolucao_criada(
+            devolucao_id=created.id,
+            item_id=created.item_id,
+            reclamante_id=created.reclamante_id,
+        )
+
         return created
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -137,7 +147,16 @@ async def update_devolucao_full(
         )
 
         update_use_case = UpdateDevolucaoUseCase(repository)
-        return await update_use_case.execute(devolucao_id, updated_entity)
+        updated = await update_use_case.execute(devolucao_id, updated_entity)
+
+        producer = DevolucaoKafkaProducer()
+        await producer.publish_devolucao_atualizada(
+            devolucao_id=updated.id,
+            item_id=updated.item_id,
+            reclamante_id=updated.reclamante_id,
+        )
+
+        return updated
 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -171,7 +190,16 @@ async def update_devolucao_partial(
         )
 
         update_use_case = UpdateDevolucaoUseCase(repository)
-        return await update_use_case.execute(devolucao_id, updated_entity)
+        updated = await update_use_case.execute(devolucao_id, updated_entity)
+
+        producer = DevolucaoKafkaProducer()
+        await producer.publish_devolucao_atualizada(
+            devolucao_id=updated.id,
+            item_id=updated.item_id,
+            reclamante_id=updated.reclamante_id,
+        )
+
+        return updated
 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -187,6 +215,13 @@ async def delete_devolucao(
     use_case = DeleteDevolucaoUseCase(repository)
 
     try:
+        existing = await GetDevolucaoByIdUseCase(repository).execute(devolucao_id)
+        if not existing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Devolução com ID {devolucao_id} não encontrada"
+            )
+
         deleted = await use_case.execute(devolucao_id)
 
         if not deleted:
@@ -194,6 +229,13 @@ async def delete_devolucao(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Devolução com ID {devolucao_id} não encontrada"
             )
+
+        producer = DevolucaoKafkaProducer()
+        await producer.publish_devolucao_deletada(
+            devolucao_id=devolucao_id,
+            item_id=existing.item_id,
+            reclamante_id=existing.reclamante_id,
+        )
 
         return None
     except ValueError as e:

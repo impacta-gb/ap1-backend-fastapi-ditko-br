@@ -28,6 +28,15 @@ class Devolucao:
 
     def __post_init__(self):
         """Validação pós-inicialização do objeto Devolucao."""
+        # Normaliza datetime com timezone para naive no timezone local.
+        # Isso evita comparação entre datas aware e naive no use case.
+        if (
+            isinstance(self.data_devolucao, datetime)
+            and self.data_devolucao.tzinfo is not None
+            and self.data_devolucao.utcoffset() is not None
+        ):
+            self.data_devolucao = self.data_devolucao.astimezone().replace(tzinfo=None)
+
         if self.reclamante_id <= 0:
             raise ValueError("O ID do reclamante deve ser um número positivo.")
         if self.item_id <= 0:

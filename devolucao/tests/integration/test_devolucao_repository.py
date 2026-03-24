@@ -198,6 +198,22 @@ class TestDevolucaoRepositoryImpl:
         # Assert
         assert total == 4
 
+    async def test_remover_item_da_projecao(self, test_session):
+        """Testa remoção de item da projeção de referência."""
+        repository = DevolucaoRepositoryImpl(test_session)
+
+        await repository.upsert_item_reference(
+            item_id=42,
+            local_id=1,
+            responsavel_id=1,
+            status="disponivel",
+        )
+        assert await repository.exists_item(42) is True
+
+        await repository.delete_item_reference(42)
+
+        assert await repository.exists_item(42) is False
+
     async def test_conversao_model_to_entity(self, test_session):
         """Testa que a conversão model→entity preserva todos os campos"""
         # Arrange
