@@ -13,41 +13,50 @@ A entidade Item implementa um sistema completo de publicação e consumo de even
 
 ### Eventos Publicados
 
-#### item_criado
+#### item.criado
 Publicado quando um novo item é criado no sistema.
 
 ```python
 {
-    "evento": "item_criado",
-    "item_id": 1,
-    "descricao": "Chave encontrada",
-    "status": "disponivel",
-    "local_id": 1,
-    "responsavel_id": 1,
-    "timestamp": "2026-03-21T10:30:00"
+    "event_type": "item.criado",
+    "aggregate_id": "1",
+    "data": {
+        "item_id": 1,
+        "descricao": "Chave encontrada",
+        "status": "disponivel",
+        "local_id": 1,
+        "responsavel_id": 1
+    }
 }
 ```
 
-#### item_atualizado
+#### item.atualizado
 Publicado quando um item existente é atualizado.
 
 ```python
 {
-    "evento": "item_atualizado",
-    "item_id": 1,
-    "status": "devolvido",
-    "timestamp": "2026-03-21T10:35:00"
+    "event_type": "item.atualizado",
+    "aggregate_id": "1",
+    "data": {
+        "item_id": 1,
+        "descricao": "Chave encontrada",
+        "status": "devolvido",
+        "local_id": 1,
+        "responsavel_id": 1
+    }
 }
 ```
 
-#### item_deletado
+#### item.deletado
 Publicado quando um item é removido do sistema.
 
 ```python
 {
-    "evento": "item_deletado",
-    "item_id": 1,
-    "timestamp": "2026-03-21T10:40:00"
+    "event_type": "item.deletado",
+    "aggregate_id": "1",
+    "data": {
+        "item_id": 1
+    }
 }
 ```
 

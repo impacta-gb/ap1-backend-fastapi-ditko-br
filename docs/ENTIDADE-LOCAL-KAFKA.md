@@ -13,41 +13,48 @@ A entidade Local implementa um sistema completo de publicação e consumo de eve
 
 ### Eventos Publicados
 
-#### local_criado
+#### local.criado
 Publicado quando um novo local é criado no sistema.
 
 ```python
 {
-    "evento": "local_criado",
-    "local_id": 1,
-    "nome": "Recepção",
-    "descricao": "Área de entrada principal",
-    "ativo": true,
-    "timestamp": "2026-03-21T10:30:00"
+    "event_type": "local.criado",
+    "aggregate_id": "1",
+    "data": {
+        "local_id": 1,
+        "tipo": "recepcao",
+        "bairro": "Centro",
+        "descricao": "Área de entrada principal"
+    }
 }
 ```
 
-#### local_atualizado
+#### local.atualizado
 Publicado quando um local existente é atualizado.
 
 ```python
 {
-    "evento": "local_atualizado",
-    "local_id": 1,
-    "nome": "Recepção",
-    "ativo": true,
-    "timestamp": "2026-03-21T10:35:00"
+    "event_type": "local.atualizado",
+    "aggregate_id": "1",
+    "data": {
+        "local_id": 1,
+        "tipo": "recepcao",
+        "bairro": "Centro",
+        "descricao": "Área de entrada principal"
+    }
 }
 ```
 
-#### local_deletado
+#### local.deletado
 Publicado quando um local é removido do sistema.
 
 ```python
 {
-    "evento": "local_deletado",
-    "local_id": 1,
-    "timestamp": "2026-03-21T10:40:00"
+    "event_type": "local.deletado",
+    "aggregate_id": "1",
+    "data": {
+        "local_id": 1
+    }
 }
 ```
 
@@ -106,7 +113,8 @@ Valida local associado ao item
 producer = LocalKafkaProducer()
 await producer.publish_local_criado(
     local_id=1,
-    nome="Recepção",
+    tipo="recepcao",
+    bairro="Centro",
     descricao="Área de entrada principal"
 )
 ```

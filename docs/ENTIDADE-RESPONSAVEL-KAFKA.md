@@ -13,42 +13,66 @@ A entidade Responsavel implementa um sistema completo de publicação e consumo 
 
 ### Eventos Publicados
 
-#### responsavel_criado
+#### responsavel.criado
 Publicado quando um novo responsável é criado no sistema.
 
 ```python
 {
-    "evento": "responsavel_criado",
-    "responsavel_id": 1,
-    "nome": "João Silva",
-    "cargo": "Recepcionista",
-    "telefone": "11987654321",
-    "ativo": true,
-    "timestamp": "2026-03-21T10:30:00"
+    "event_type": "responsavel.criado",
+    "aggregate_id": "1",
+    "data": {
+        "responsavel_id": 1,
+        "nome": "João Silva",
+        "cargo": "Recepcionista",
+        "telefone": "11987654321"
+    }
 }
 ```
 
-#### responsavel_atualizado
+#### responsavel.atualizado
 Publicado quando um responsável existente é atualizado.
 
 ```python
 {
-    "evento": "responsavel_atualizado",
-    "responsavel_id": 1,
-    "nome": "João Silva",
-    "ativo": true,
-    "timestamp": "2026-03-21T10:35:00"
+    "event_type": "responsavel.atualizado",
+    "aggregate_id": "1",
+    "data": {
+        "responsavel_id": 1,
+        "nome": "João Silva",
+        "cargo": "Recepcionista",
+        "telefone": "11987654321",
+        "ativo": true
+    }
 }
 ```
 
-#### responsavel_deletado
+#### responsavel.status_alterado
+Publicado quando há alteração de status de um responsável.
+
+```python
+{
+    "event_type": "responsavel.status_alterado",
+    "aggregate_id": "1",
+    "data": {
+        "responsavel_id": 1,
+        "nome": "João Silva",
+        "cargo": "Recepcionista",
+        "telefone": "11987654321",
+        "ativo": false
+    }
+}
+```
+
+#### responsavel.deletado
 Publicado quando um responsável é removido do sistema.
 
 ```python
 {
-    "evento": "responsavel_deletado",
-    "responsavel_id": 1,
-    "timestamp": "2026-03-21T10:40:00"
+    "event_type": "responsavel.deletado",
+    "aggregate_id": "1",
+    "data": {
+        "responsavel_id": 1
+    }
 }
 ```
 

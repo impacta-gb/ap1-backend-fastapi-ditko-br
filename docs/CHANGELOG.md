@@ -7,6 +7,92 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não Lançado]
 
+### Adicionado — 24 de Março de 2026
+
+#### 40. Infraestrutura de mensageria Kafka para todos os domínios
+- **Descrição**: Implementação e consolidação da integração assíncrona entre Item, Local, Responsável, Reclamante e Devolução.
+- **Componentes adicionados**:
+  - Producers Kafka por domínio:
+    - `item/src/infrastructure/messaging/producer/kafka_producer.py`
+    - `local/src/infrastructure/messaging/producer/kafka_producer.py`
+    - `responsavel/src/infrastructure/messaging/producer/kafka_producer.py`
+    - `reclamante/src/infrastructure/messaging/producer/kafka_producer.py`
+    - `devolucao/src/infrastructure/messaging/producer/kafka_producer.py`
+  - Consumers Kafka por domínio:
+    - Item consumindo eventos de Devolução
+    - Devolução consumindo eventos de Item
+    - Reclamante consumindo eventos de Item, Responsável e Devolução
+    - Responsável consumindo eventos de Item
+    - Local consumindo eventos de Item
+  - Classes base e inicialização de pacotes de mensageria (`__init__.py`) em todos os módulos.
+- **Impacto**: Comunicação orientada a eventos habilitada de ponta a ponta, com menor acoplamento entre módulos.
+
+#### 41. Bootstrap e configuração central de mensageria
+- **Descrição**: Introdução de inicialização centralizada dos componentes de mensageria e configuração de ambiente.
+- **Arquivos**:
+  - `bootstrap.py`
+  - `docker-compose.yml`
+  - `.env.example`
+- **Impacto**: Inicialização e shutdown padronizados para producers/consumers Kafka e ambiente de execução mais previsível.
+
+#### 42. Testes de integração Kafka e cobertura transversal
+- **Descrição**: Ampliação da cobertura de testes para contratos de eventos e consumo entre domínios.
+- **Arquivos principais**:
+  - `tests/integration/test_kafka_producers.py`
+  - `tests/integration/test_kafka_messaging.py`
+  - `tests/integration/test_kafka_cross_module_integration.py`
+  - `item/tests/integration/test_devolucao_event_consumer.py`
+  - `devolucao/tests/integration/test_item_event_consumer.py`
+  - `reclamante/tests/integration/test_item_event_consumer.py`
+  - `reclamante/tests/integration/test_responsavel_event_consumer.py`
+  - `reclamante/tests/integration/test_devolucao_event_consumer.py`
+  - `responsavel/tests/integration/test_item_event_consumer.py`
+  - `local/tests/integration/test_item_event_consumer.py`
+- **Impacto**: Maior segurança para evolução de contratos Kafka e detecção precoce de regressões de integração.
+
+### Corrigido — 24 de Março de 2026
+
+#### 43. Erros 500 em endpoints e robustez de rotas
+- **Descrição**: Correções em endpoints para evitar falhas de execução e melhorar tratamento de validação.
+- **Arquivos**:
+  - `item/src/presentation/api/routes/item_routes.py`
+  - `local/src/presentation/api/routes/local_routes.py`
+  - `responsavel/src/presentation/api/routes/responsavel_routes.py`
+  - `devolucao/src/presentation/api/routes/devolucao_routes.py`
+  - `reclamante/src/presentation/api/routes/reclamante_routes.py`
+- **Impacto**: Redução de erros internos e maior consistência de respostas HTTP para cenários inválidos.
+
+#### 44. Isolamento de banco em testes e estabilização de suites
+- **Descrição**: Ajustes para isolamento de banco e execução confiável dos testes por módulo.
+- **Arquivos principais**:
+  - `conftest.py`
+  - `item/tests/integration/conftest.py`
+  - `reclamante/tests/integration/conftest.py`
+  - testes de API/integração de Item, Local, Responsável e Devolução
+- **Impacto**: Execução de testes menos dependente do ambiente e com menor risco de interferência entre suites.
+
+#### 45. Ajustes de estrutura e consistência de projeto
+- **Descrição**: Correções pontuais de estrutura, imports e padronização para manter o projeto consistente.
+- **Arquivos**:
+  - `app.py` (prefixos e organização de rotas)
+  - `item/__init__.py` (ajuste de inicialização)
+  - testes unitários/integrados de Item e Reclamante
+- **Impacto**: Melhor manutenção e menor fricção de desenvolvimento entre módulos.
+
+### Documentação — 24 de Março de 2026
+
+#### 46. Atualização da documentação técnica de Kafka por domínio e geral
+- **Descrição**: Documentação ampliada para refletir arquitetura de mensageria por entidade e visão geral de integração.
+- **Arquivos**:
+  - `docs/KAFKA.md`
+  - `docs/ENTIDADE-ITEM-KAFKA.md`
+  - `docs/ENTIDADE-LOCAL-KAFKA.md`
+  - `docs/ENTIDADE-RESPONSAVEL-KAFKA.md`
+  - `docs/ENTIDADE-RECLAMANTE-KAFKA.md`
+  - `docs/ENTIDADE-DEVOLUCAO-KAFKA.md`
+  - `docs/TESTS.md`
+- **Impacto**: Referência atualizada para operação, manutenção e evolução dos contratos de eventos e testes.
+
 ### Adicionado — 13 de Março de 2026
 
 #### 36. Entidade Reclamante com Clean Architecture
