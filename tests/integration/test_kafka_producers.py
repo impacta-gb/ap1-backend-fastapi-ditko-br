@@ -2,6 +2,7 @@
 Testes para todos os Kafka Producers
 Verifica que cada producer funciona corretamente e é um Singleton
 """
+import json
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -100,6 +101,29 @@ class TestReclamanteKafkaProducer:
         producer = ReclamanteKafkaProducer()
         assert hasattr(producer, 'publish_reclamante_criado')
         assert callable(producer.publish_reclamante_criado)
+
+    @pytest.mark.asyncio
+    async def test_reclamante_event_payload_usa_documento(self):
+        """Garante que o payload de reclamante usa documento e não email."""
+        from reclamante.src.infrastructure.messaging.producer import ReclamanteKafkaProducer
+
+        producer = ReclamanteKafkaProducer()
+        producer.producer = AsyncMock()
+
+        await producer.publish_reclamante_criado(
+            reclamante_id=1,
+            nome="Neide",
+            documento="12345678900",
+            telefone="11911111111",
+        )
+
+        producer.producer.send_and_wait.assert_called_once()
+        args = producer.producer.send_and_wait.call_args.args
+        payload = json.loads(args[1].decode("utf-8"))
+
+        assert payload["event_type"] == "reclamante.criado"
+        assert payload["data"]["documento"] == "12345678900"
+        assert "email" not in payload["data"]
 
 
 class TestResponsavelKafkaProducer:
