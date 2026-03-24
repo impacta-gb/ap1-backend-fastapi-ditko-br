@@ -84,7 +84,7 @@ class ReclamanteKafkaProducer:
         if not self.producer:
             logger.warning("Producer não está disponível")
             return
-        
+
         try:
             event = {
                 "event_type": "reclamante.atualizado",
@@ -96,7 +96,7 @@ class ReclamanteKafkaProducer:
                     "telefone": telefone
                 }
             }
-            
+
             await self.producer.send_and_wait(
                 "reclamante_events",
                 json.dumps(event).encode('utf-8')
