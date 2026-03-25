@@ -47,13 +47,16 @@ Responsáveis por consumir eventos dos tópicos Kafka. Cada módulo possui uma p
 
 | Módulo | Consumer | Tópicos | Eventos |
 |--------|----------|---------|---------|
-| **Item** | `DevolucaoEventConsumer` | `devolucao_events` | `devolucao.criada` |
-| **Devolução** | `ItemEventConsumer` | `item_events` | `item.registrado` |
-| **Reclamante** | `ItemEventConsumer` | `item_events` | `item.registrado` |
-| **Reclamante** | `ResponsavelEventConsumer` | `responsavel_events` | `responsavel.criado` |
-| **Reclamante** | `DevolucaoEventConsumer` | `devolucao_events` | `devolucao.criada` |
-| **Responsável** | `ItemEventConsumer` | `item_events` | `item.registrado` |
-| **Local** | `ItemEventConsumer` | `item_events` | `item.registrado` |
+| **Item** | `DevolucaoEventConsumer` | `devolucao_events` | `devolucao.criada`, `devolucao.atualizada`, `devolucao.deletada` |
+| **Item** | `LocalEventConsumer` | `local_events` | `local.criado`, `local.atualizado`, `local.deletado` |
+| **Item** | `ResponsavelEventConsumer` | `responsavel_events` | `responsavel.criado`, `responsavel.atualizado`, `responsavel.status_alterado`, `responsavel.deletado` |
+| **Devolução** | `ItemEventConsumer` | `item_events` | `item.criado`, `item.atualizado`, `item.deletado` |
+| **Devolução** | `ReclamanteEventConsumer` | `reclamante_events` | `reclamante.criado`, `reclamante.atualizado`, `reclamante.deletado` |
+| **Reclamante** | `ItemEventConsumer` | `item_events` | `item.criado`, `item.atualizado`, `item.deletado` |
+| **Reclamante** | `ResponsavelEventConsumer` | `responsavel_events` | `responsavel.criado`, `responsavel.atualizado`, `responsavel.status_alterado`, `responsavel.deletado` |
+| **Reclamante** | `DevolucaoEventConsumer` | `devolucao_events` | `devolucao.criada`, `devolucao.atualizada`, `devolucao.deletada` |
+| **Responsável** | `ItemEventConsumer` | `item_events` | `item.criado`, `item.atualizado`, `item.deletado` |
+| **Local** | `ItemEventConsumer` | `item_events` | `item.criado`, `item.atualizado`, `item.deletado` |
 
 **Classe Base: KafkaConsumer**
 ```python
@@ -99,11 +102,22 @@ Publicados pelos producers quando uma ação acontece.
 
 | Evento | Producer | Tópico | Consumidores |
 |--------|----------|--------|-------------|
-| `item.registrado` | ItemKafkaProducer | `item_events` | DevolucaoItemEventConsumer, ReclamanteItemEventConsumer, ResponsavelItemEventConsumer, LocalItemEventConsumer |
+| `item.criado` | ItemKafkaProducer | `item_events` | DevolucaoItemEventConsumer, ReclamanteItemEventConsumer, ResponsavelItemEventConsumer, LocalItemEventConsumer |
+| `item.atualizado` | ItemKafkaProducer | `item_events` | DevolucaoItemEventConsumer, ReclamanteItemEventConsumer, ResponsavelItemEventConsumer, LocalItemEventConsumer |
+| `item.deletado` | ItemKafkaProducer | `item_events` | DevolucaoItemEventConsumer, ReclamanteItemEventConsumer, ResponsavelItemEventConsumer, LocalItemEventConsumer |
 | `devolucao.criada` | DevolucaoKafkaProducer | `devolucao_events` | ItemDevolucaoEventConsumer, ReclamanteDevolucaoEventConsumer |
-| `responsavel.criado` | ResponsavelKafkaProducer | `responsavel_events` | ReclamanteResponsavelEventConsumer |
-| `reclamante.criado` | ReclamanteKafkaProducer | `reclamante_events` | (Aberto para expansão) |
-| `local.criado` | LocalKafkaProducer | `local_events` | (Aberto para expansão) |
+| `devolucao.atualizada` | DevolucaoKafkaProducer | `devolucao_events` | ItemDevolucaoEventConsumer, ReclamanteDevolucaoEventConsumer |
+| `devolucao.deletada` | DevolucaoKafkaProducer | `devolucao_events` | ItemDevolucaoEventConsumer, ReclamanteDevolucaoEventConsumer |
+| `responsavel.criado` | ResponsavelKafkaProducer | `responsavel_events` | ReclamanteResponsavelEventConsumer, ItemResponsavelEventConsumer |
+| `responsavel.atualizado` | ResponsavelKafkaProducer | `responsavel_events` | ReclamanteResponsavelEventConsumer, ItemResponsavelEventConsumer |
+| `responsavel.status_alterado` | ResponsavelKafkaProducer | `responsavel_events` | ReclamanteResponsavelEventConsumer, ItemResponsavelEventConsumer |
+| `responsavel.deletado` | ResponsavelKafkaProducer | `responsavel_events` | ReclamanteResponsavelEventConsumer, ItemResponsavelEventConsumer |
+| `reclamante.criado` | ReclamanteKafkaProducer | `reclamante_events` | DevolucaoReclamanteEventConsumer |
+| `reclamante.atualizado` | ReclamanteKafkaProducer | `reclamante_events` | DevolucaoReclamanteEventConsumer |
+| `reclamante.deletado` | ReclamanteKafkaProducer | `reclamante_events` | DevolucaoReclamanteEventConsumer |
+| `local.criado` | LocalKafkaProducer | `local_events` | ItemLocalEventConsumer |
+| `local.atualizado` | LocalKafkaProducer | `local_events` | ItemLocalEventConsumer |
+| `local.deletado` | LocalKafkaProducer | `local_events` | ItemLocalEventConsumer |
 
 ---
 
@@ -158,7 +172,7 @@ Repository.create() → BD de Item
     ↓
 ItemKafkaProducer.publish_item_criado()
     ↓
-[KAFKA TOPIC: item_events / Evento: item.registrado]
+[KAFKA TOPIC: item_events / Evento: item.criado]
     ↓
 Múltiplos consumers escutam simultaneamente:
 ├── DevolucaoItemEventConsumer → sincroniza item
@@ -199,7 +213,7 @@ from bootstrap import MessagingBootstrap
 # Inicializar
 messaging = MessagingBootstrap()
 await messaging.start_producers()    # Inicia 5 producers
-await messaging.start_consumers()    # Inicia 7 consumers
+    await messaging.start_consumers()    # Inicia consumers registrados no bootstrap
 
 # Cleanup
 await messaging.stop_producers()
@@ -221,7 +235,7 @@ class MessagingBootstrap:
         # LocalKafkaProducer
     
     async def start_consumers(self):
-        """Inicia todos os 7 consumers"""
+        """Inicia todos os consumers"""
         # DevolucaoEventConsumer (Item)
         # ItemEventConsumer (Devolução)
         # ItemEventConsumer (Reclamante)
@@ -358,7 +372,7 @@ await producer.publish_item_criado(
 **Estrutura do evento publicado:**
 ```json
 {
-  "event_type": "item.registrado",
+    "event_type": "item.criado",
   "aggregate_id": "123",
   "data": {
     "item_id": 123,
@@ -390,22 +404,26 @@ class ItemEventConsumer(KafkaConsumer):
         """Processa a mensagem recebida do Kafka"""
         event_type = message.get("event_type")
         
-        if event_type == "item.registrado":
-            await self._handle_item_registrado(message)
+        if event_type == "item.criado":
+            await self._handle_item_criado(message)
+        elif event_type == "item.atualizado":
+            await self._handle_item_atualizado(message)
+        elif event_type == "item.deletado":
+            await self._handle_item_deletado(message)
         else:
             logger.debug(f"Tipo de evento não tratado: {event_type}")
     
-    async def _handle_item_registrado(self, message: dict):
-        """Processa quando um item é registrado"""
+    async def _handle_item_criado(self, message: dict):
+        """Processa quando um item é criado"""
         try:
             data = message.get('data', {})
             item_id = data.get('item_id')
             
             # Sua lógica aqui
-            logger.info(f"Item {item_id} foi registrado")
+            logger.info(f"Item {item_id} foi criado")
             
         except Exception as e:
-            logger.error(f"Erro ao processar item registrado: {e}")
+            logger.error(f"Erro ao processar item criado: {e}")
 ```
 
 2. **Adicione ao __init__.py do módulo:**

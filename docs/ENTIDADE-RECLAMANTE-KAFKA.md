@@ -13,40 +13,48 @@ A entidade Reclamante implementa um sistema completo de publicação e consumo d
 
 ### Eventos Publicados
 
-#### reclamante_criado
+#### reclamante.criado
 Publicado quando um novo reclamante é criado no sistema.
 
 ```python
 {
-    "evento": "reclamante_criado",
-    "reclamante_id": 1,
-    "nome": "Maria Silva",
-    "telefone": "11987654321",
-    "documento": "12345678900",
-    "timestamp": "2026-03-21T10:30:00"
+    "event_type": "reclamante.criado",
+    "aggregate_id": "1",
+    "data": {
+        "reclamante_id": 1,
+        "nome": "Maria Silva",
+        "telefone": "11987654321",
+        "documento": "12345678900"
+    }
 }
 ```
 
-#### reclamante_atualizado
+#### reclamante.atualizado
 Publicado quando um reclamante existente é atualizado.
 
 ```python
 {
-    "evento": "reclamante_atualizado",
-    "reclamante_id": 1,
-    "nome": "Maria Silva",
-    "timestamp": "2026-03-21T10:35:00"
+    "event_type": "reclamante.atualizado",
+    "aggregate_id": "1",
+    "data": {
+        "reclamante_id": 1,
+        "nome": "Maria Silva",
+        "telefone": "11987654321",
+        "documento": "12345678900"
+    }
 }
 ```
 
-#### reclamante_deletado
+#### reclamante.deletado
 Publicado quando um reclamante é removido do sistema.
 
 ```python
 {
-    "evento": "reclamante_deletado",
-    "reclamante_id": 1,
-    "timestamp": "2026-03-21T10:40:00"
+    "event_type": "reclamante.deletado",
+    "aggregate_id": "1",
+    "data": {
+        "reclamante_id": 1
+    }
 }
 ```
 

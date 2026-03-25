@@ -13,41 +13,48 @@ A entidade Devolucao implementa um sistema completo de publicação e consumo de
 
 ### Eventos Publicados
 
-#### devolucao_criada
+#### devolucao.criada
 Publicado quando uma nova devolução é criada no sistema.
 
 ```python
 {
-    "evento": "devolucao_criada",
-    "devolucao_id": 1,
-    "item_id": 1,
-    "reclamante_id": 1,
-    "data_devolucao": "2026-03-21T10:30:00",
-    "observacao": "Item devolvido com sucesso",
-    "timestamp": "2026-03-21T10:30:00"
+    "event_type": "devolucao.criada",
+    "aggregate_id": "1",
+    "data": {
+        "devolucao_id": 1,
+        "item_id": 1,
+        "reclamante_id": 1
+    }
 }
 ```
 
-#### devolucao_atualizada
+#### devolucao.atualizada
 Publicado quando uma devolução existente é atualizada.
 
 ```python
 {
-    "evento": "devolucao_atualizada",
-    "devolucao_id": 1,
-    "observacao": "Observação atualizada",
-    "timestamp": "2026-03-21T10:35:00"
+    "event_type": "devolucao.atualizada",
+    "aggregate_id": "1",
+    "data": {
+        "devolucao_id": 1,
+        "item_id": 1,
+        "reclamante_id": 1
+    }
 }
 ```
 
-#### devolucao_deletada
+#### devolucao.deletada
 Publicado quando uma devolução é removida do sistema.
 
 ```python
 {
-    "evento": "devolucao_deletada",
-    "devolucao_id": 1,
-    "timestamp": "2026-03-21T10:40:00"
+    "event_type": "devolucao.deletada",
+    "aggregate_id": "1",
+    "data": {
+        "devolucao_id": 1,
+        "item_id": 1,
+        "reclamante_id": 1
+    }
 }
 ```
 
