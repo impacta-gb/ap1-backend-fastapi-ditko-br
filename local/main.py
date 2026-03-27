@@ -3,12 +3,11 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 # rotas
 
-from local.src.presentation.api.routes import local_routes
+from src.presentation.api.routes import local_routes
 
 from bootstrap import MessagingBootstrap
 # banco de dados
-from local.src.infrastructure.database.config import init_db as init_db_local
-from item.src.application.use_cases.sync_local_projection_use_case import sync_local_projection_for_item
+from src.infrastructure.database.config import init_db as init_db_local
 
 
 @asynccontextmanager
@@ -16,10 +15,6 @@ async def lifespan(app: FastAPI):
     """Gerencia o ciclo de vida da aplicação"""
     # Inicializa os bancos de dados
     await init_db_local()
-
-
-    # Reconstroi projeções críticas para evitar inconsistência após restart.
-    await sync_local_projection_for_item()
 
     # Inicializa mensageria (producers/consumers Kafka)
     messaging_bootstrap = MessagingBootstrap()

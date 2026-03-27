@@ -16,6 +16,9 @@ async def lifespan(app: FastAPI):
     # Inicializa os bancos de dados
     await init_db_devolucao()
 
+    # Reconstroi projeções críticas para evitar inconsistência após restart.
+    await sync_item_projection_for_devolucao()
+    await sync_reclamante_projection_for_devolucao()
 
     # Inicializa mensageria (producers/consumers Kafka)
     messaging_bootstrap = MessagingBootstrap()

@@ -3,13 +3,11 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 # rotas
 
-from reclamante.src.presentation.api.routes import reclamante_routes
+from src.presentation.api.routes import reclamante_routes
 from bootstrap import MessagingBootstrap
 # banco de dados
 
-from reclamante.src.infrastructure.database.config import init_db as init_db_reclamante
-from devolucao.src.application.use_cases.sync_reclamante_projection_use_case import sync_reclamante_projection_for_devolucao
-
+from src.infrastructure.database.config import init_db as init_db_reclamante
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,10 +15,6 @@ async def lifespan(app: FastAPI):
     # Inicializa os bancos de dados
 
     await init_db_reclamante()
-
-    # Reconstroi projeções críticas para evitar inconsistência após restart.
-
-    await sync_reclamante_projection_for_devolucao()
 
     # Inicializa mensageria (producers/consumers Kafka)
     messaging_bootstrap = MessagingBootstrap()

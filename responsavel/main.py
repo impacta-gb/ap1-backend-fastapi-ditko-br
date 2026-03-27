@@ -2,12 +2,10 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 # rotas
-from responsavel.src.presentation.api.routes import responsavel_routes
+from src.presentation.api.routes import responsavel_routes
 from bootstrap import MessagingBootstrap
 # banco de dados
-from responsavel.src.infrastructure.database.config import init_db as init_db_responsavel
-from item.src.application.use_cases.sync_responsavel_projection_use_case import sync_responsavel_projection_for_item
-
+from src.infrastructure.database.config import init_db as init_db_responsavel
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,9 +17,7 @@ async def lifespan(app: FastAPI):
     await init_db_devolucao()
     await init_db_reclamante()
 
-    # Reconstroi projeções críticas para evitar inconsistência após restart.
-    await sync_responsavel_projection_for_item()
-
+   
     # Inicializa mensageria (producers/consumers Kafka)
     messaging_bootstrap = MessagingBootstrap()
     app.state.messaging_bootstrap = messaging_bootstrap

@@ -2,11 +2,11 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 # rotas
-from item.src.presentation.api.routes import item_routes
+from src.presentation.api.routes import item_routes
 from bootstrap import MessagingBootstrap
 # banco de dados
-from item.src.application.use_cases.sync_local_projection_use_case import sync_local_projection_for_item
-from item.src.application.use_cases.sync_responsavel_projection_use_case import sync_responsavel_projection_for_item
+from src.application.use_cases.sync_local_projection_use_case import sync_local_projection_for_item
+from src.application.use_cases.sync_responsavel_projection_use_case import sync_responsavel_projection_for_item
 
 
 @asynccontextmanager
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     # Reconstroi projeções críticas para evitar inconsistência após restart.
     await sync_local_projection_for_item()
     await sync_responsavel_projection_for_item()
-    await sync_item_projection_for_devolucao()
+
 
     # Inicializa mensageria (producers/consumers Kafka)
     messaging_bootstrap = MessagingBootstrap()
