@@ -1,6 +1,53 @@
 version: '3.8'
 
 services:
+
+  devolucao:
+    build: ./devolucao
+    ports:
+      -"5003:5003"
+    volumes:
+      -./devolucao:/app
+    networks:
+      - backend
+    container_name: devolucao
+  
+    reclamante:
+      build: ./reclamante
+      ports:
+        -"5001:5001"
+      volumes:
+        -./reclamante:/app
+      networks:
+        - backend
+      container_name: reclamante
+  item:
+    build: ./item
+    ports:
+      -"5004:5004"
+    volumes:
+      -./item:/app
+    networks:
+      - backend
+    container_name: item
+  local:
+    build: ./local
+    ports:
+      -"5000:5000"
+    volumes:
+      -./local:/app
+    networks:
+      - backend
+    container_name: local
+  responsavel:
+    build: ./responsavel
+    ports:
+      -"5002:5002"
+    volumes:
+      -./responsavel:/app
+    networks:
+      - backend
+    container_name: responsavel
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
