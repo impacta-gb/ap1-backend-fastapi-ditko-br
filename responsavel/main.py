@@ -11,11 +11,8 @@ from src.infrastructure.database.config import init_db as init_db_responsavel
 async def lifespan(app: FastAPI):
     """Gerencia o ciclo de vida da aplicação"""
     # Inicializa os bancos de dados
-    await init_db_local()
     await init_db_responsavel()
-    await init_db_item()
-    await init_db_devolucao()
-    await init_db_reclamante()
+    
 
    
     # Inicializa mensageria (producers/consumers Kafka)
