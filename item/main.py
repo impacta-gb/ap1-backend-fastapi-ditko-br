@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from src.presentation.api.routes import item_routes
 from bootstrap import MessagingBootstrap
 # banco de dados
+from src.infrastructure.database.config import init_db as init_db_item
 from src.application.use_cases.sync_local_projection_use_case import sync_local_projection_for_item
 from src.application.use_cases.sync_responsavel_projection_use_case import sync_responsavel_projection_for_item
 
