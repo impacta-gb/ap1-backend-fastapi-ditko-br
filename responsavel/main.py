@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, status
 # rotas
 from src.presentation.api.routes import responsavel_routes
-from bootstrap import MessagingBootstrap
+from src.infrastructure.messaging.bootstrap import MessagingBootstrap
 # banco de dados
 from src.infrastructure.database.config import init_db as init_db_responsavel
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,13 +43,14 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
         content={"message": str(exc)},
     )
 
+
 # Inclui as rotas
 app.include_router(responsavel_routes.router, prefix="/api/v1/responsaveis")
 
 @app.get("/")
 def read_root():
     return {
-        'message': 'Bem-vindo ao Sistema de Achados e Perdidos',
+        'message': 'Sistema de Achados e Perdidos: Microserviço de Responsável',
         'docs': '/docs',
         'version': '1.0.0'
     }

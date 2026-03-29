@@ -1,13 +1,12 @@
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, status
 # rotas
 from src.presentation.api.routes import devolucao_routes
-from bootstrap import MessagingBootstrap
+from src.infrastructure.messaging.bootstrap import MessagingBootstrap
 # banco de dados
 from src.infrastructure.database.config import init_db as init_db_devolucao
-from src.application.use_cases.sync_item_projection_use_case import sync_item_projection_for_devolucao
-from src.application.use_cases.sync_reclamante_projection_use_case import sync_reclamante_projection_for_devolucao
+
+
 
 
 @asynccontextmanager
@@ -15,10 +14,6 @@ async def lifespan(app: FastAPI):
     """Gerencia o ciclo de vida da aplicação"""
     # Inicializa os bancos de dados
     await init_db_devolucao()
-
-    # Reconstroi projeções críticas para evitar inconsistência após restart.
-    await sync_item_projection_for_devolucao()
-    await sync_reclamante_projection_for_devolucao()
 
     # Inicializa mensageria (producers/consumers Kafka)
     messaging_bootstrap = MessagingBootstrap()
@@ -48,6 +43,7 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
         content={"message": str(exc)},
     )
 
+
 # Inclui a rota
 app.include_router(devolucao_routes.router, prefix="/api/v1/devolucoes")
 
@@ -55,7 +51,7 @@ app.include_router(devolucao_routes.router, prefix="/api/v1/devolucoes")
 @app.get("/")
 def read_root():
     return {
-        'message': 'Bem-vindo ao Sistema de Achados e Perdidos',
+        'message': 'Sistema de Achados e Perdidos: Microserviço de Devolução',
         'docs': '/docs',
         'version': '1.0.0'
     }
