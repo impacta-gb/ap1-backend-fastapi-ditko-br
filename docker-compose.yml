@@ -1,55 +1,79 @@
-version: '3.8'
-
 services:
+
+  item:
+    build: ./item
+    working_dir: /app/item
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: item
+
+  local:
+    build: ./local
+    working_dir: /app/local
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: local
+
+  responsavel:
+    build: ./responsavel
+    working_dir: /app/responsavel
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: responsavel
+
   devolucao:
     build: ./devolucao
+    working_dir: /app/devolucao
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "5003:5003"
     volumes:
-      - ./devolucao:/app
+      - ./:/app
     networks:
       - backend
+      - kafka-network
     container_name: devolucao
 
   reclamante:
     build: ./reclamante
-    ports:
-      - "5001:5001"
-    volumes:
-      - ./reclamante:/app
-    networks:
-      - backend
-    container_name: reclamante
-
-  responsavel:
-    build: ./responsavel
-    ports:
-      - "5002:5002"
-    volumes:
-      - ./responsavel:/app
-    networks:
-      - backend
-    container_name: responsavel
-
-  local:
-    build: ./local
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./local:/app
-    networks:
-      - backend
-    container_name: local
-
-  item:
-    build: ./item
+    working_dir: /app/reclamante
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "5004:5004"
     volumes:
-      - ./item:/app
+      - ./:/app
     networks:
       - backend
-    container_name: item
+      - kafka-network
+    container_name: reclamante
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
