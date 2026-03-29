@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from local.src.application.schemas.local_schema import (
     LocalCreate,
     LocalUpdate,
+    LocalPatch,
     LocalResponse,
     LocalListResponse,
 )
@@ -142,41 +143,41 @@ class TestLocalUpdateSchema:
         assert schema.descricao == "Terminal 2 - Embarque"
         assert schema.bairro == "Cumbica"
 
-    def test_update_schema_com_campos_opcionais(self):
-        """Testa que todos os campos do update são opcionais"""
+    def test_patch_schema_com_campos_opcionais(self):
+        """Testa que todos os campos do patch são opcionais"""
         # Arrange & Act
-        schema = LocalUpdate()
+        schema = LocalPatch()
 
         # Assert - todos os campos devem ser None quando omitidos
         assert schema.tipo is None
         assert schema.descricao is None
         assert schema.bairro is None
 
-    def test_update_schema_apenas_tipo(self):
-        """Testa update apenas do tipo"""
+    def test_patch_schema_apenas_tipo(self):
+        """Testa patch apenas do tipo"""
         # Arrange & Act
-        schema = LocalUpdate(tipo="Rodoviária")
+        schema = LocalPatch(tipo="Rodoviária")
 
         # Assert
         assert schema.tipo == "Rodoviária"
         assert schema.descricao is None
         assert schema.bairro is None
 
-    def test_update_schema_apenas_bairro(self):
-        """Testa update apenas do bairro"""
+    def test_patch_schema_apenas_bairro(self):
+        """Testa patch apenas do bairro"""
         # Arrange & Act
-        schema = LocalUpdate(bairro="Pinheiros")
+        schema = LocalPatch(bairro="Pinheiros")
 
         # Assert
         assert schema.tipo is None
         assert schema.descricao is None
         assert schema.bairro == "Pinheiros"
 
-    def test_update_schema_com_tipo_vazio_falha(self):
-        """Testa que tipo vazio no update não é aceito"""
+    def test_patch_schema_com_tipo_vazio_falha(self):
+        """Testa que tipo vazio no patch não é aceito"""
         # Arrange & Act & Assert
         with pytest.raises(ValidationError):
-            LocalUpdate(tipo="")
+            LocalPatch(tipo="")
 
 
 class TestLocalResponseSchema:

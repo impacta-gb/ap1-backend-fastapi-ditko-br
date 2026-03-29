@@ -125,9 +125,9 @@ class TestDevolucaoEndToEnd:
         data_alvo = datetime(2024, 5, 20, 10, 0, 0)
         data_outra = datetime(2024, 9, 10, 15, 0, 0)
 
-        await create_use_case.execute(criar_devolucao(data_devolucao=data_alvo, observacao="D1"))
-        await create_use_case.execute(criar_devolucao(data_devolucao=data_alvo, observacao="D2"))
-        await create_use_case.execute(criar_devolucao(data_devolucao=data_outra, observacao="D3"))
+        await create_use_case.execute(criar_devolucao(data_devolucao=data_alvo, observacao="D1", item_id=1, reclamante_id=1))
+        await create_use_case.execute(criar_devolucao(data_devolucao=data_alvo, observacao="D2", item_id=4, reclamante_id=2))
+        await create_use_case.execute(criar_devolucao(data_devolucao=data_outra, observacao="D3", item_id=5, reclamante_id=3))
 
         # Act
         resultado = await buscar_data_use_case.execute(data_alvo)

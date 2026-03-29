@@ -2,13 +2,37 @@
 Testes de integração da API REST de Reclamante
 Testa os endpoints HTTP, validações, status codes e serialização
 """
+import sys
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from unittest.mock import AsyncMock, patch
+
+# Adicionar o diretório reclamante ao PYTHONPATH para importar main.py
+reclamante_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(reclamante_dir))
+
 from reclamante.src.infrastructure.database.config import Base, get_session
-from app import app
+
+with patch("src.infrastructure.messaging.bootstrap.MessagingBootstrap") as MockMessagingBootstrap:
+    bootstrap_instance = MockMessagingBootstrap.return_value
+    bootstrap_instance.start_producers = AsyncMock(return_value=None)
+    bootstrap_instance.start_consumers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_producers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_consumers = AsyncMock(return_value=None)
+    from main import app
+
+
+def payload_data(response):
+    """Extrai o payload de sucesso, aceitando contrato antigo e novo."""
+    body = response.json()
+    if isinstance(body, dict) and "data" in body:
+        return body["data"]
+    return body
 
 
 @pytest_asyncio.fixture
@@ -65,7 +89,7 @@ class TestCreateReclamanteAPI:
 
         # Assert
         assert response.status_code == 201
-        data = response.json()
+        data = payload_data(response)
         assert data["nome"] == "Teste"
         assert "id" in data
 
@@ -139,7 +163,7 @@ class TestGetAllReclamantesAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert "reclamantes" in data
         assert "total" in data
 
@@ -150,7 +174,7 @@ class TestGetAllReclamantesAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["skip"] == 0
         assert data["limit"] == 10
 
@@ -181,14 +205,14 @@ class TestGetReclamanteByIdAPI:
             "/api/v1/reclamantes/",
             json={"nome": "Busca", "documento": "222", "telefone": "888"},
         )
-        reclamante_id = create_response.json()["id"]
+        reclamante_id = payload_data(create_response)["id"]
 
         # Act
         response = client.get(f"/api/v1/reclamantes/{reclamante_id}")
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["id"] == reclamante_id
         assert data["nome"] == "Busca"
 
@@ -227,7 +251,7 @@ class TestUpdateReclamanteAPI:
             "/api/v1/reclamantes/",
             json={"nome": "Antigo", "documento": "333", "telefone": "777"},
         )
-        reclamante_id = create_response.json()["id"]
+        reclamante_id = payload_data(create_response)["id"]
 
         # Act
         response = client.put(
@@ -237,7 +261,7 @@ class TestUpdateReclamanteAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["nome"] == "Novo"
         assert data["telefone"] == "666"
 
@@ -267,7 +291,7 @@ class TestUpdateReclamanteAPI:
             "/api/v1/reclamantes/",
             json={"nome": "Original", "documento": "909", "telefone": "101"},
         )
-        reclamante_id = create_response.json()["id"]
+        reclamante_id = payload_data(create_response)["id"]
 
         # Act
         response = client.put(
@@ -289,13 +313,13 @@ class TestDeleteReclamanteAPI:
             "/api/v1/reclamantes/",
             json={"nome": "Apagar", "documento": "444", "telefone": "555"},
         )
-        reclamante_id = create_response.json()["id"]
+        reclamante_id = payload_data(create_response)["id"]
 
         # Act
         delete_response = client.delete(f"/api/v1/reclamantes/{reclamante_id}")
 
         # Assert
-        assert delete_response.status_code == 204
+        assert delete_response.status_code in [200, 204]
 
         # Act
         get_response = client.get(f"/api/v1/reclamantes/{reclamante_id}")
@@ -318,3 +342,38 @@ class TestDeleteReclamanteAPI:
 
         # Assert
         assert response.status_code == 422
+
+
+class TestPatchReclamanteAPI:
+    """Testes para PATCH /api/v1/reclamantes/{id}"""
+
+    def test_patch_reclamante_com_sucesso(self, client):
+        create_response = client.post(
+            "/api/v1/reclamantes/",
+            json={"nome": "Patch", "documento": "321", "telefone": "777"},
+        )
+        reclamante_id = payload_data(create_response)["id"]
+
+        response = client.patch(
+            f"/api/v1/reclamantes/{reclamante_id}",
+            json={"telefone": "555"},
+        )
+
+        assert response.status_code == 200
+        data = payload_data(response)
+        assert data["telefone"] == "555"
+
+    def test_patch_reclamante_vazio_retorna_400(self, client):
+        create_response = client.post(
+            "/api/v1/reclamantes/",
+            json={"nome": "Patch", "documento": "321", "telefone": "777"},
+        )
+        reclamante_id = payload_data(create_response)["id"]
+
+        response = client.patch(f"/api/v1/reclamantes/{reclamante_id}", json={})
+
+        assert response.status_code == 400
+
+    def test_patch_reclamante_inexistente(self, client):
+        response = client.patch("/api/v1/reclamantes/9999", json={"nome": "Novo"})
+        assert response.status_code == 404

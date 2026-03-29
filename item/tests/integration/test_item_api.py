@@ -2,14 +2,39 @@
 Testes de integração da API REST de Item
 Testa os endpoints HTTP, validações, status codes e serialização
 """
+import sys
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from unittest.mock import AsyncMock, patch
+
+# Adicionar o diretório item ao PYTHONPATH para importar main.py
+item_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(item_dir))
+
 from item.src.infrastructure.database.config import Base, get_session
-from app import app
+from item.src.infrastructure.database.models import LocalReferenceModel, ResponsavelReferenceModel
+
+with patch("src.infrastructure.messaging.bootstrap.MessagingBootstrap") as MockMessagingBootstrap:
+    bootstrap_instance = MockMessagingBootstrap.return_value
+    bootstrap_instance.start_producers = AsyncMock(return_value=None)
+    bootstrap_instance.start_consumers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_producers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_consumers = AsyncMock(return_value=None)
+    from main import app
+
+
+def payload_data(response):
+    """Extrai o payload de sucesso, aceitando contrato antigo e novo."""
+    body = response.json()
+    if isinstance(body, dict) and "data" in body:
+        return body["data"]
+    return body
 
 
 # Fixture para criar um banco de dados de teste em memória
@@ -40,9 +65,36 @@ async def test_db():
 @pytest.fixture
 def client(test_db):
     """Cria um cliente de teste para a API"""
+    async def seed_references():
+        async with test_db() as session:
+            locais = [
+                LocalReferenceModel(
+                    id=i,
+                    tipo="Local Teste",
+                    bairro="Centro",
+                    descricao=f"Local {i}",
+                )
+                for i in range(1, 21)
+            ]
+            responsaveis = [
+                ResponsavelReferenceModel(
+                    id=i,
+                    nome=f"Responsavel {i}",
+                    cargo="Seguranca",
+                    telefone=f"1199999{i:04d}",
+                    ativo=1,
+                )
+                for i in range(1, 21)
+            ]
+            session.add_all(locais + responsaveis)
+            await session.commit()
+
     async def override_get_session():
         async with test_db() as session:
             yield session
+
+    import asyncio
+    asyncio.run(seed_references())
 
     app.dependency_overrides[get_session] = override_get_session
     with TestClient(app, raise_server_exceptions=False) as test_client:
@@ -70,7 +122,7 @@ class TestCreateItemAPI:
         
         # Assert
         assert response.status_code == 201
-        data = response.json()
+        data = payload_data(response)
         assert data["nome"] == "Notebook Dell"
         assert data["categoria"] == "Eletrônicos"
         assert data["status"] == "disponivel"
@@ -166,14 +218,14 @@ class TestGetItemByIdAPI:
             "responsavel_id": 1
         }
         create_response = client.post("/api/v1/items/", json=item_data)
-        item_id = create_response.json()["id"]
+        item_id = payload_data(create_response)["id"]
         
         # Act
         response = client.get(f"/api/v1/items/{item_id}")
         
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["id"] == item_id
         assert data["nome"] == "Item para buscar"
     
@@ -226,7 +278,7 @@ class TestListItemsAPI:
         
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert "items" in data or isinstance(data, list)
         if isinstance(data, dict):
             assert len(data["items"]) >= 3
@@ -252,7 +304,7 @@ class TestListItemsAPI:
         
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         if isinstance(data, dict):
             assert len(data["items"]) <= 3
         else:
@@ -290,7 +342,7 @@ class TestUpdateItemAPI:
             "responsavel_id": 1
         }
         create_response = client.post("/api/v1/items/", json=item_data)
-        item_id = create_response.json()["id"]
+        item_id = payload_data(create_response)["id"]
         
         # Act - Atualiza o item
         update_data = {
@@ -298,6 +350,7 @@ class TestUpdateItemAPI:
             "categoria": "Teste Atualizado",
             "data_encontro": datetime.now().isoformat(),
             "descricao": "Descrição atualizada",
+            "status": "disponivel",
             "local_id": 1,
             "responsavel_id": 1
         }
@@ -305,7 +358,7 @@ class TestUpdateItemAPI:
         
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["nome"] == "Item Atualizado"
         assert data["descricao"] == "Descrição atualizada"
     
@@ -317,6 +370,7 @@ class TestUpdateItemAPI:
             "categoria": "Teste",
             "data_encontro": datetime.now().isoformat(),
             "descricao": "Descrição teste",
+            "status": "disponivel",
             "local_id": 1,
             "responsavel_id": 1
         }
@@ -339,7 +393,7 @@ class TestUpdateItemAPI:
             "responsavel_id": 1
         }
         create_response = client.post("/api/v1/items/", json=item_data)
-        item_id = create_response.json()["id"]
+        item_id = payload_data(create_response)["id"]
         
         # Act - Tenta mudar status para devolvido
         update_data = {
@@ -373,7 +427,7 @@ class TestDeleteItemAPI:
             "responsavel_id": 1
         }
         create_response = client.post("/api/v1/items/", json=item_data)
-        item_id = create_response.json()["id"]
+        item_id = payload_data(create_response)["id"]
         
         # Act
         response = client.delete(f"/api/v1/items/{item_id}")
@@ -405,7 +459,7 @@ class TestDeleteItemAPI:
             "responsavel_id": 1
         }
         create_response = client.post("/api/v1/items/", json=item_data)
-        item_id = create_response.json()["id"]
+        item_id = payload_data(create_response)["id"]
         
         # Marca como devolvido (assumindo que existe endpoint ou método)
         # Nota: Ajustar conforme implementação real
@@ -415,6 +469,58 @@ class TestDeleteItemAPI:
         
         # Assert - Pode passar se item não for devolvido ainda
         # Este teste precisa ser ajustado conforme a implementação
+
+
+class TestPatchItemAPI:
+    """Testes para PATCH /api/v1/items/{id}"""
+
+    def test_patch_item_com_sucesso(self, client):
+        """Testa atualização parcial de item"""
+        create_response = client.post(
+            "/api/v1/items/",
+            json={
+                "nome": "Item patch",
+                "categoria": "Teste",
+                "data_encontro": datetime.now().isoformat(),
+                "descricao": "Descrição original",
+                "local_id": 1,
+                "responsavel_id": 1,
+            },
+        )
+        item_id = payload_data(create_response)["id"]
+
+        response = client.patch(
+            f"/api/v1/items/{item_id}",
+            json={"descricao": "Descrição alterada via patch"},
+        )
+
+        assert response.status_code == 200
+        data = payload_data(response)
+        assert data["descricao"] == "Descrição alterada via patch"
+
+    def test_patch_item_vazio_retorna_400(self, client):
+        """Testa PATCH com payload vazio"""
+        create_response = client.post(
+            "/api/v1/items/",
+            json={
+                "nome": "Item vazio",
+                "categoria": "Teste",
+                "data_encontro": datetime.now().isoformat(),
+                "descricao": "Descrição",
+                "local_id": 1,
+                "responsavel_id": 1,
+            },
+        )
+        item_id = payload_data(create_response)["id"]
+
+        response = client.patch(f"/api/v1/items/{item_id}", json={})
+
+        assert response.status_code == 400
+
+    def test_patch_item_inexistente(self, client):
+        """Testa PATCH em item inexistente"""
+        response = client.patch("/api/v1/items/99999", json={"descricao": "Nova"})
+        assert response.status_code == 404
 
 
 class TestFilterItemsAPI:
@@ -439,7 +545,7 @@ class TestFilterItemsAPI:
         
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         if isinstance(data, list):
             assert all(item["categoria"] == "Eletrônicos" for item in data)
         else:
@@ -453,7 +559,7 @@ class TestFilterItemsAPI:
         # Assert
         assert response.status_code in [400, 404, 422]
     
-    async def test_buscar_por_status_disponivel(self, client):
+    def test_buscar_por_status_disponivel(self, client):
         """Testa a busca por status 'disponivel'"""
         # Arrange - Cria itens
         for i in range(2):
@@ -472,7 +578,7 @@ class TestFilterItemsAPI:
         
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         if isinstance(data, list):
             assert all(item["status"] == "disponivel" for item in data)
         else:
@@ -516,7 +622,7 @@ class TestAPIResponseFormat:
         
         # Assert
         assert response.status_code == 201
-        data = response.json()
+        data = payload_data(response)
         
         # Campos obrigatórios na resposta
         required_fields = ["id", "nome", "categoria", "data_encontro", 
