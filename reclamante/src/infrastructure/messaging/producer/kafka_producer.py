@@ -3,6 +3,7 @@ Producer Kafka para publicar eventos do microserviço de Reclamante
 """
 import json
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class ReclamanteKafkaProducer:
         try:
             from aiokafka import AIOKafkaProducer
             self.producer = AIOKafkaProducer(
-                bootstrap_servers='localhost:9092'
+                bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
             )
             await self.producer.start()
             logger.info("ReclamanteKafkaProducer iniciado com sucesso")
