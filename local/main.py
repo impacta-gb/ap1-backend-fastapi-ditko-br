@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 # rotas
 
 from src.presentation.api.routes import local_routes
