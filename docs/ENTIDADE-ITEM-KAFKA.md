@@ -22,6 +22,7 @@ Publicado quando um novo item é criado no sistema.
     "aggregate_id": "1",
     "data": {
         "item_id": 1,
+        "nome": "Chave",
         "descricao": "Chave encontrada",
         "status": "disponivel",
         "local_id": 1,
@@ -39,6 +40,7 @@ Publicado quando um item existente é atualizado.
     "aggregate_id": "1",
     "data": {
         "item_id": 1,
+        "nome": "Chave",
         "descricao": "Chave encontrada",
         "status": "devolvido",
         "local_id": 1,
@@ -115,6 +117,7 @@ Atualiza status do Item
 producer = ItemKafkaProducer()
 await producer.publish_item_criado(
     item_id=1,
+    nome="Chave",
     descricao="Chave encontrada",
     status="disponivel",
     local_id=1,

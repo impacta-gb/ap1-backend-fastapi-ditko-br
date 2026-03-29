@@ -1,198 +1,166 @@
 # Arquitetura Diplomata - Sistema de Achados e Perdidos
 
-## Estrutura do Projeto
+## Visão Geral
 
 Este projeto segue a **Arquitetura Diplomata**, organizando o código em camadas bem definidas com separação clara de responsabilidades.
 
+Hoje, o sistema combina:
+- Microsserviços independentes por contexto de negócio
+- API REST com FastAPI em cada módulo
+- Comunicação assíncrona com Apache Kafka
+- Persistência isolada por serviço
+- Arquitetura em camadas (Diplomata) dentro de cada microsserviço
+
+## Microsserviços do Backend
+
+O domínio foi dividido em cinco serviços:
+
+1. Local
+2. Reclamante
+3. Responsável
+4. Item
+5. Devolução
+
+Cada serviço tem:
+- código-fonte próprio
+- endpoints próprios
+- banco de dados próprio
+- produtor e/ou consumidores Kafka
+- suíte de testes própria
+
+## Arquitetura Interna de Cada Serviço
+
+Cada microsserviço segue o padrão em camadas:
+
 ```
 src/
-├── domain/                    # Camada de Domínio (Core)
-│   ├── entities/             # Entidades de negócio
-│   │   └── item.py          # Entidade Item
-│   └── repositories/         # Interfaces dos repositórios (Ports)
-│       └── item_repository.py
-│
-├── application/              # Camada de Aplicação
-│   ├── use_cases/           # Casos de uso (regras de negócio)
-│   │   └── item_use_cases.py
-│   └── schemas/             # DTOs/Schemas Pydantic
-│       └── item_schema.py
-│
-├── infrastructure/           # Camada de Infraestrutura (Adapters)
-│   ├── database/            # Configuração do banco de dados
-│   │   ├── config.py       # Configuração SQLAlchemy
-│   │   └── models.py       # Modelos ORM
-│   └── repositories/        # Implementações concretas dos repositórios
-│       └── item_repository_impl.py
-│
-└── presentation/            # Camada de Apresentação
-    └── api/                # API REST
-        └── routes/         # Endpoints FastAPI
-            └── item_routes.py
+├── domain/            # Entidades e contratos de repositório
+├── application/       # Use cases e schemas de entrada/saída
+├── infrastructure/    # Banco, repositórios e mensageria
+└── presentation/      # Rotas HTTP (FastAPI)
 ```
 
-## Camadas da Arquitetura
+Responsabilidades por camada:
 
-### 1. Domain (Domínio)
-**Propósito**: Núcleo da aplicação, contém a lógica de negócio pura.
+### 1. Domain
+- Regras de negócio centrais
+- Entidades do contexto
+- Interfaces de repositório (ports)
 
-- **Entities**: Classes que representam os conceitos principais do negócio
-  - `Item`: Representa um item perdido/encontrado
-  - Contém validações e regras de negócio
+### 2. Application
+- Casos de uso
+- Orquestração das regras
+- Validação de payloads com schemas
 
-- **Repositories (Interfaces)**: Contratos (abstrações) para acesso a dados
-  - Define o que pode ser feito, não como
-  - Inversão de dependência (Dependency Inversion Principle)
+### 3. Infrastructure
+- SQLAlchemy e modelos ORM
+- Implementações concretas de repositório
+- Producers, consumers e bootstrap de mensageria
 
-**Características**:
-- Independente de frameworks
-- Independente de banco de dados
-- Testável isoladamente
-- Sem dependências externas
+### 4. Presentation
+- Endpoints REST
+- Mapeamento request/response
+- Tratamento de erros HTTP
 
-### 2. Application (Aplicação)
-**Propósito**: Orquestra o fluxo de dados e coordena os casos de uso.
+## Comunicação Entre Serviços
 
-- **Use Cases**: Casos de uso específicos da aplicação
-  - `CreateItemUseCase`: Criar novo item
-  - `GetItemByIdUseCase`: Buscar item por ID
-  - `UpdateItemUseCase`: Atualizar item
-  - etc.
+O sistema usa dois tipos de comunicação:
 
-- **Schemas**: DTOs (Data Transfer Objects) usando Pydantic
-  - Validação de entrada/saída
-  - Serialização/Deserialização
-  - Documentação automática
+1. Síncrona: HTTP REST para operações expostas por API.
+2. Assíncrona: eventos Kafka para sincronização entre contextos.
 
-**Características**:
-- Depende apenas do Domain
-- Define interfaces de entrada/saída
-- Orquestra a lógica de negócio
+Tópicos principais usados pelo projeto:
+- item_events
+- local_events
+- responsavel_events
+- reclamante_events
+- devolucao_events
 
-### 3. Infrastructure (Infraestrutura)
-**Propósito**: Implementações concretas e detalhes técnicos.
+Padrão de evento:
 
-- **Database**: Configuração e modelos do banco de dados
-  - SQLAlchemy setup
-  - Modelos ORM
-  - Migrations (futuramente)
-
-- **Repositories (Implementations)**: Implementações concretas dos repositórios
-  - Acesso ao banco de dados
-  - Conversão entre entidades e modelos ORM
-
-**Características**:
-- Implementa as interfaces do Domain
-- Lida com detalhes técnicos
-- Pode ser substituída facilmente
-
-### 4. Presentation (Apresentação)
-**Propósito**: Interface com o mundo externo (API REST).
-
-- **API Routes**: Endpoints HTTP
-  - Controllers FastAPI
-  - Validação de requisições
-  - Formatação de respostas
-  - Tratamento de erros
-
-**Características**:
-- Depende das camadas Application e Infrastructure
-- Lida com HTTP, JSON, etc.
-- Injeta dependências
-
-## Fluxo de Dados
-
-```
-Request (HTTP)
-    ↓
-[Presentation Layer] - Recebe e valida request
-    ↓
-[Application Layer] - Executa use case
-    ↓
-[Domain Layer] - Aplica regras de negócio
-    ↓
-[Infrastructure Layer] - Acessa banco de dados
-    ↓
-Response (HTTP)
+```json
+{
+  "event_type": "entidade.acao",
+  "aggregate_id": "123",
+  "data": {}
+}
 ```
 
-## Princípios Aplicados
+## Consistência e Projeções
 
-### 1. **Dependency Inversion Principle (DIP)**
-- Camadas internas não dependem de camadas externas
-- Uso de interfaces (abstrações) no Domain
-- Implementações concretas na Infrastructure
+Como cada serviço possui seu próprio banco, a consistência entre módulos é eventual.
 
-### 2. **Single Responsibility Principle (SRP)**
-- Cada classe tem uma única responsabilidade
-- Use cases focados em uma ação específica
-- Separação clara entre camadas
+Exemplo prático:
+- O serviço Item valida referências de Local e Responsável a partir de projeções locais.
+- Essas projeções são alimentadas por consumers Kafka.
+- Se a mensageria estiver indisponível, pode haver atraso de sincronização.
 
-### 3. **Open/Closed Principle (OCP)**
-- Aberto para extensão, fechado para modificação
-- Novas funcionalidades sem alterar código existente
+Esse modelo privilegia:
+- desacoplamento entre serviços
+- resiliência de comunicação
+- escalabilidade por contexto
 
-### 4. **Interface Segregation Principle (ISP)**
-- Interfaces específicas e focadas
-- Clientes não dependem de métodos que não usam
+## Ciclo de Vida e Mensageria
 
-## Vantagens da Arquitetura Diplomata
+No startup de cada API:
 
-- **Testabilidade**: Cada camada pode ser testada isoladamente
-- **Manutenibilidade**: Código organizado e fácil de entender
-- **Flexibilidade**: Fácil trocar implementações (ex: banco de dados)
-- **Escalabilidade**: Estrutura preparada para crescimento
-- **Independência**: Core da aplicação independente de frameworks
+1. inicializa banco local
+2. inicializa bootstrap de mensageria
+3. inicia producers e consumers
 
-## Próximos Passos
+No shutdown:
 
-1. Entidade Item implementada
-2. Implementar entidades: Local, Responsável, Reclamante, Devolução
-3. Adicionar testes unitários
-4. Implementar relacionamentos entre entidades
-5. Adicionar migrations com Alembic
-6. Implementar autenticação e autorização
-7. Adicionar logs e monitoramento
+1. encerra consumers
+2. encerra producers
 
-## Executando o Projeto
+Os componentes de mensageria possuem tratamento de falha e tentativa de reconexão para reduzir impacto de indisponibilidade temporária do broker.
 
-1. Instale as dependências:
-```bash
-poetry install
+## Fluxos Arquiteturais
+
+### Fluxo síncrono (dentro do serviço)
+
+```
+HTTP Request
+  -> presentation/routes
+  -> application/use_cases
+  -> domain/entities + regras
+  -> infrastructure/repositories
+  -> banco local
+  -> HTTP Response
 ```
 
-2. Execute o servidor:
-```bash
-poetry run uvicorn app:app --reload
+### Fluxo assíncrono (entre serviços)
+
+```
+Ação de negócio em um serviço
+  -> producer publica evento
+  -> Kafka topic
+  -> consumer em outro serviço
+  -> atualização de projeção local
 ```
 
-3. Acesse a documentação:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+## Benefícios da Arquitetura Atual
 
-## Testando os Endpoints
+- Separação clara de responsabilidades
+- Independência de deploy por módulo
+- Isolamento de falhas por contexto
+- Escalabilidade horizontal por serviço
+- Evolução independente dos domínios
+- Testabilidade por camadas e por módulo
 
-### Criar Item
-```bash
-curl -X POST "http://localhost:8000/api/v1/items/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nome": "Celular Samsung",
-    "categoria": "eletronicos",
-    "data_encontro": "2026-02-12T10:00:00",
-    "descricao": "Celular Samsung Galaxy encontrado no corredor",
-    "status": "disponivel",
-    "local_id": 1,
-    "responsavel_id": 1
-  }'
-```
+## Trade-offs e Pontos de Atenção
 
-### Listar Itens
-```bash
-curl -X GET "http://localhost:8000/api/v1/items/"
-```
+- Consistência eventual exige monitoramento de eventos
+- Inicialização de mensageria pode aumentar tempo de startup
+- Testes de integração precisam controlar dependências externas (ex.: Kafka)
+- Observabilidade (logs, rastreio de eventos, métricas) é essencial
 
-### Buscar Item por ID
-```bash
-curl -X GET "http://localhost:8000/api/v1/items/1"
-```
+## Referências Relacionadas
+
+- docs/KAFKA.md
+- docs/DOCKER.md
+- docs/ENTIDADE-ITEM.md
+- docs/ENTIDADE-LOCAL.md
+- docs/ENTIDADE-RESPONSAVEL.md
+- docs/ENTIDADE-RECLAMANTE.md
+- docs/ENTIDADE-DEVOLUCAO.md

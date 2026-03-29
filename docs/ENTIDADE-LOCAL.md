@@ -1,4 +1,4 @@
-# Implementação da Entidade Local - Arquitetura Diplomata
+﻿# Implementação da Entidade Local - Arquitetura Diplomata
 
 ## O que foi implementado
 
@@ -110,12 +110,13 @@ Endpoints REST implementados:
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| POST | `/api/v1/local/` | Criar novo local |
-| GET | `/api/v1/local/` | Listar todos (paginado) |
-| GET | `/api/v1/local/bairro/{bairro}` | Buscar por bairro |
-| GET | `/api/v1/local/{local_id}` | Buscar local por ID |
-| PUT | `/api/v1/local/{local_id}` | Atualizar local |
-| DELETE | `/api/v1/local/{local_id}` | Deletar local |
+| POST | `/api/v1/locais/` | Criar novo local |
+| GET | `/api/v1/locais/` | Listar todos (paginado) |
+| GET | `/api/v1/locais/bairro/{bairro}` | Buscar por bairro |
+| GET | `/api/v1/locais/{local_id}` | Buscar local por ID |
+| PUT | `/api/v1/locais/{local_id}` | Atualizar local |
+| PATCH | `/api/v1/locais/{local_id}` | Atualização parcial |
+| DELETE | `/api/v1/locais/{local_id}` | Deletar local |
 
 **Características:**
 - Dependency Injection do repositório via `Depends(get_session)`
@@ -126,7 +127,7 @@ Endpoints REST implementados:
 
 ### 6. Arquivos de Configuração
 
-#### `app.py` - Atualizado
+#### `main.py` - Atualizado
 - Importação do módulo `local`
 - Lifespan atualizado para inicializar os três bancos:
   - `init_db_item()` - Banco de items
@@ -137,7 +138,7 @@ Endpoints REST implementados:
 
 #### `local/__init__.py` - Criado
 - Torna o diretório `local` um módulo Python importável
-- Permite importação correta das rotas no `app.py`
+- Permite importação correta das rotas no `main.py`
 
 ## Validações Implementadas
 
@@ -206,18 +207,18 @@ if not bairro or len(bairro.strip()) == 0:
 
 ### 1. Executar a Aplicação
 ```bash
-poetry run uvicorn app:app --reload
+poetry run uvicorn main:app --reload --port 5001
 ```
 
 ### 2. Acessar Documentação
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:5001/docs
+- ReDoc: http://localhost:5001/redoc
 
 ### 3. Testar Endpoints
 
 #### Criar Local
 ```bash
-curl -X POST "http://localhost:8000/api/v1/local/" \
+curl -X POST "http://localhost:5001/api/v1/locais/" \
   -H "Content-Type: application/json" \
   -d '{
     "tipo": "Escola",
@@ -240,7 +241,7 @@ curl -X POST "http://localhost:8000/api/v1/local/" \
 
 #### Listar Todos (Paginado)
 ```bash
-curl -X GET "http://localhost:8000/api/v1/local/?skip=0&limit=10"
+curl -X GET "http://localhost:5001/api/v1/locais/?skip=0&limit=10"
 ```
 
 **Resposta:**
@@ -264,17 +265,17 @@ curl -X GET "http://localhost:8000/api/v1/local/?skip=0&limit=10"
 
 #### Buscar por ID
 ```bash
-curl -X GET "http://localhost:8000/api/v1/local/1"
+curl -X GET "http://localhost:5001/api/v1/locais/1"
 ```
 
 #### Buscar por Bairro
 ```bash
-curl -X GET "http://localhost:8000/api/v1/local/bairro/Centro"
+curl -X GET "http://localhost:5001/api/v1/locais/bairro/Centro"
 ```
 
 #### Atualizar (PUT)
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/local/1" \
+curl -X PUT "http://localhost:5001/api/v1/locais/1" \
   -H "Content-Type: application/json" \
   -d '{
     "tipo": "Universidade",
@@ -285,7 +286,7 @@ curl -X PUT "http://localhost:8000/api/v1/local/1" \
 
 #### Deletar
 ```bash
-curl -X DELETE "http://localhost:8000/api/v1/local/1"
+curl -X DELETE "http://localhost:5001/api/v1/locais/1"
 ```
 
 ## Diferenças em Relação às Demais Entidades
@@ -367,7 +368,7 @@ class ItemResponseWithLocal(BaseModel):
 - **Use Case Pattern**: Encapsulamento de lógica de aplicação
 
 ### REST API Best Practices
-- **Resource-Oriented**: URLs representam recursos (`/api/v1/local/`)
+- **Resource-Oriented**: URLs representam recursos (`/api/v1/locais/`)
 - **HTTP Status Codes**: Uso apropriado (200, 201, 204, 400, 404)
 - **Idempotência**: PUT e DELETE são idempotentes
 
@@ -402,7 +403,7 @@ docs/ENTIDADE-LOCAL.md
 
 ### Modificados
 ```
-app.py          # Inclusão de rotas e lifespan para init_db_local()
+main.py          # Inclusão de rotas e lifespan para init_db_local()
 ```
 
 ## Referências
@@ -418,3 +419,7 @@ app.py          # Inclusão de rotas e lifespan para init_db_local()
 Projeto Frameworks Full Stack - Prof. Giovani Bontempo - Faculdade Impacta
 
 **Data de Implementação**: 6 de Março de 2026
+
+
+
+

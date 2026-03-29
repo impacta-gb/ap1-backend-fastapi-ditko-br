@@ -203,17 +203,17 @@ Sincroniza dados de responsável
 
 ## Inicialização (Bootstrap)
 
-### Arquivo bootstrap.py
+### Arquivo bootstrap.py por serviço
 
-A inicialização centralizada de todos os producers e consumers está em `bootstrap.py` na raiz do projeto.
+A inicialização de producers e consumers é feita por serviço, em `src/infrastructure/messaging/bootstrap.py` de cada módulo.
 
 ```python
-from bootstrap import MessagingBootstrap
+from src.infrastructure.messaging.bootstrap import MessagingBootstrap
 
-# Inicializar
+# Inicialização do módulo
 messaging = MessagingBootstrap()
-await messaging.start_producers()    # Inicia 5 producers
-    await messaging.start_consumers()    # Inicia consumers registrados no bootstrap
+await messaging.start_producers()
+await messaging.start_consumers()
 
 # Cleanup
 await messaging.stop_producers()
@@ -251,32 +251,27 @@ class MessagingBootstrap:
         """Para todos os consumers"""
 ```
 
-### Integração com app.py
+### Integração com main.py (por módulo)
 
 ```python
-from bootstrap import MessagingBootstrap
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from src.infrastructure.database.config import init_db
+from src.infrastructure.messaging.bootstrap import MessagingBootstrap
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Gerencia o ciclo de vida da aplicação"""
-    
-    # Inicializar bancos de dados
-    await init_db_local()
-    await init_db_responsavel()
-    await init_db_item()
-    await init_db_devolucao()
-    await init_db_reclamante()
-    
-    # Inicializar messaging (Kafka)
+    await init_db()
+
     messaging = MessagingBootstrap()
     await messaging.start_producers()
     await messaging.start_consumers()
-    
-    yield
-    
-    # Cleanup - parar producers e consumers
-    await messaging.stop_producers()
-    await messaging.stop_consumers()
+
+    try:
+        yield
+    finally:
+        await messaging.stop_consumers()
+        await messaging.stop_producers()
 ```
 
 ---
@@ -343,7 +338,7 @@ projeto/
 │       ├── __init__.py
 │       ├── kafka_consumer.py
 │       └── item_event_consumer.py
-└── bootstrap.py (Inicialização centralizada)
+└── bootstrap.py (Inicialização por serviço)
 ```
 
 ---
@@ -358,7 +353,7 @@ from item.src.infrastructure.messaging.producer import ItemKafkaProducer
 # Obter a instância do producer (Singleton)
 producer = ItemKafkaProducer()
 
-# Já foi inicializado em bootstrap.py durante startup
+# Já foi inicializado no bootstrap do serviço durante startup
 # Publicar um evento de item criado
 await producer.publish_item_criado(
     item_id=123,
@@ -643,12 +638,20 @@ docker-compose up -d
 ### Iniciar o servidor FastAPI
 
 ```powershell
-python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+# Exemplos por serviço
+python -m uvicorn item.main:app --reload --host 0.0.0.0 --port 5000
+python -m uvicorn local.main:app --reload --host 0.0.0.0 --port 5001
+python -m uvicorn responsavel.main:app --reload --host 0.0.0.0 --port 5002
+python -m uvicorn devolucao.main:app --reload --host 0.0.0.0 --port 5003
+python -m uvicorn reclamante.main:app --reload --host 0.0.0.0 --port 5004
 ```
 
 **Acesso:**
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Item: http://localhost:5000/docs
+- Local: http://localhost:5001/docs
+- Responsável: http://localhost:5002/docs
+- Devolução: http://localhost:5003/docs
+- Reclamante: http://localhost:5004/docs
 
 --- 
 

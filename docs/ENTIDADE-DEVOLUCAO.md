@@ -1,4 +1,4 @@
-# Implementação da Entidade Devolucao - Arquitetura Diplomata
+﻿# Implementação da Entidade Devolucao - Arquitetura Diplomata
 
 ## O que foi implementado
 
@@ -132,7 +132,7 @@ Endpoints REST implementados:
 
 ### 6. Arquivos de Configuração
 
-#### `app.py` - Atualizado
+#### `main.py` - Atualizado
 - Importação do módulo `devolucao`
 - Lifespan atualizado para inicializar os quatro bancos:
   - `init_db_item()` - Banco de items
@@ -192,18 +192,18 @@ if not data:
 
 ### 1. Executar a Aplicação
 ```bash
-poetry run uvicorn app:app --reload
+poetry run uvicorn main:app --reload --port 5003
 ```
 
 ### 2. Acessar Documentação
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:5003/docs
+- ReDoc: http://localhost:5003/redoc
 
 ### 3. Testar Endpoints
 
 #### Criar Devolução
 ```bash
-curl -X POST "http://localhost:8000/api/v1/devolucoes/" \
+curl -X POST "http://localhost:5003/api/v1/devolucoes/" \
   -H "Content-Type: application/json" \
   -d '{
     "reclamante_id": 1,
@@ -227,7 +227,7 @@ curl -X POST "http://localhost:8000/api/v1/devolucoes/" \
 
 #### Listar Todas (Paginado)
 ```bash
-curl -X GET "http://localhost:8000/api/v1/devolucoes/?skip=0&limit=10"
+curl -X GET "http://localhost:5003/api/v1/devolucoes/?skip=0&limit=10"
 ```
 
 **Resposta:**
@@ -252,17 +252,17 @@ curl -X GET "http://localhost:8000/api/v1/devolucoes/?skip=0&limit=10"
 
 #### Buscar por ID
 ```bash
-curl -X GET "http://localhost:8000/api/v1/devolucoes/1"
+curl -X GET "http://localhost:5003/api/v1/devolucoes/1"
 ```
 
 #### Buscar por Data
 ```bash
-curl -X GET "http://localhost:8000/api/v1/devolucoes/data/2026-03-07T00:00:00"
+curl -X GET "http://localhost:5003/api/v1/devolucoes/data/2026-03-07T00:00:00"
 ```
 
 #### Atualizar (PUT)
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/devolucoes/1" \
+curl -X PUT "http://localhost:5003/api/v1/devolucoes/1" \
   -H "Content-Type: application/json" \
   -d '{
     "reclamante_id": 1,
@@ -274,7 +274,7 @@ curl -X PUT "http://localhost:8000/api/v1/devolucoes/1" \
 
 #### Atualização Parcial (PATCH)
 ```bash
-curl -X PATCH "http://localhost:8000/api/v1/devolucoes/1" \
+curl -X PATCH "http://localhost:5003/api/v1/devolucoes/1" \
   -H "Content-Type: application/json" \
   -d '{
     "observacao": "Apenas a observação foi atualizada"
@@ -283,7 +283,7 @@ curl -X PATCH "http://localhost:8000/api/v1/devolucoes/1" \
 
 #### Deletar
 ```bash
-curl -X DELETE "http://localhost:8000/api/v1/devolucoes/1"
+curl -X DELETE "http://localhost:5003/api/v1/devolucoes/1"
 ```
 
 ## Diferenças em Relação às Demais Entidades
@@ -409,7 +409,7 @@ docs/ENTIDADE-DEVOLUCAO.md
 
 ### Modificados
 ```
-app.py          # Inclusão de rotas e lifespan para init_db_devolucao()
+main.py          # Inclusão de rotas e lifespan para init_db_devolucao()
 ```
 
 ## Referências
@@ -425,3 +425,6 @@ app.py          # Inclusão de rotas e lifespan para init_db_devolucao()
 Projeto Frameworks Full Stack - Prof. Giovani Bontempo - Faculdade Impacta
 
 **Data de Implementação**: 7 de Março de 2026
+
+
+
