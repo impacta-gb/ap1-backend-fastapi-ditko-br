@@ -22,6 +22,17 @@ class ItemCreate(ItemBase):
 
 class ItemUpdate(BaseModel):
     """Schema para atualização de Item"""
+    nome: str = Field(..., min_length=1, max_length=255)
+    categoria: str = Field(..., min_length=1, max_length=100)
+    data_encontro: datetime = Field(...)
+    descricao: str = Field(..., min_length=1)
+    status: str = Field(...)
+    local_id: int = Field(..., gt=0)
+    responsavel_id: int = Field(..., gt=0)
+
+
+class ItemPatch(BaseModel):
+    """Schema para atualização parcial de Item"""
     nome: Optional[str] = Field(None, min_length=1, max_length=255)
     categoria: Optional[str] = Field(None, min_length=1, max_length=100)
     data_encontro: Optional[datetime] = None
