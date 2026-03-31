@@ -1,4 +1,4 @@
-# Implementação da Entidade Responsavel - Arquitetura Diplomata
+﻿# Implementação da Entidade Responsavel - Arquitetura Diplomata
 
 ## O que foi implementado
 
@@ -134,7 +134,7 @@ Endpoints REST implementados:
 
 ### 6. Arquivos de Configuração
 
-#### `app.py` - Atualizado
+#### `main.py` - Atualizado
 - Importação do módulo responsavel
 - Lifespan atualizado para inicializar ambos os bancos:
   - `init_db_item()` - Banco de items
@@ -144,7 +144,7 @@ Endpoints REST implementados:
 
 #### `responsavel/__init__.py` - Criado
 - Torna o diretório `responsavel` um módulo Python importável
-- Permite importação correta das rotas no app.py
+- Permite importação correta das rotas no main.py
 
 ## Regra de Negócio Implementada
 
@@ -217,18 +217,18 @@ Endpoints REST implementados:
 
 ### 1. Executar a Aplicação
 ```bash
-poetry run uvicorn app:app --reload
+poetry run uvicorn main:app --reload --port 5002
 ```
 
 ### 2. Acessar Documentação
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:5002/docs
+- ReDoc: http://localhost:5002/redoc
 
 ### 3. Testar Endpoints
 
 #### Criar Responsável
 ```bash
-curl -X POST "http://localhost:8000/api/v1/responsaveis/" \
+curl -X POST "http://localhost:5002/api/v1/responsaveis/" \
   -H "Content-Type: application/json" \
   -d '{
     "nome": "João Silva",
@@ -250,7 +250,7 @@ curl -X POST "http://localhost:8000/api/v1/responsaveis/" \
 
 #### Listar Todos (Paginado)
 ```bash
-curl -X GET "http://localhost:8000/api/v1/responsaveis/?skip=0&limit=10"
+curl -X GET "http://localhost:5002/api/v1/responsaveis/?skip=0&limit=10"
 ```
 
 **Resposta:**
@@ -273,21 +273,21 @@ curl -X GET "http://localhost:8000/api/v1/responsaveis/?skip=0&limit=10"
 
 #### Buscar por ID
 ```bash
-curl -X GET "http://localhost:8000/api/v1/responsaveis/1"
+curl -X GET "http://localhost:5002/api/v1/responsaveis/1"
 ```
 
 #### Buscar por Status Ativo
 ```bash
 # Buscar apenas ativos
-curl -X GET "http://localhost:8000/api/v1/responsaveis/ativo/true"
+curl -X GET "http://localhost:5002/api/v1/responsaveis/ativo/true"
 
 # Buscar apenas inativos
-curl -X GET "http://localhost:8000/api/v1/responsaveis/ativo/false"
+curl -X GET "http://localhost:5002/api/v1/responsaveis/ativo/false"
 ```
 
 #### Atualizar Dados (PUT)
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/responsaveis/1" \
+curl -X PUT "http://localhost:5002/api/v1/responsaveis/1" \
   -H "Content-Type: application/json" \
   -d '{
     "nome": "João Pedro Silva",
@@ -300,7 +300,7 @@ curl -X PUT "http://localhost:8000/api/v1/responsaveis/1" \
 #### Atualização Parcial (PATCH)
 ```bash
 # Atualizar apenas o telefone
-curl -X PATCH "http://localhost:8000/api/v1/responsaveis/1" \
+curl -X PATCH "http://localhost:5002/api/v1/responsaveis/1" \
   -H "Content-Type: application/json" \
   -d '{
     "telefone": "11999887766"
@@ -311,14 +311,14 @@ curl -X PATCH "http://localhost:8000/api/v1/responsaveis/1" \
 #### Alterar Status (PATCH /status)
 ```bash
 # Desativar responsável
-curl -X PATCH "http://localhost:8000/api/v1/responsaveis/1/status" \
+curl -X PATCH "http://localhost:5002/api/v1/responsaveis/1/status" \
   -H "Content-Type: application/json" \
   -d '{
     "ativo": false
   }'
 
 # Reativar responsável
-curl -X PATCH "http://localhost:8000/api/v1/responsaveis/1/status" \
+curl -X PATCH "http://localhost:5002/api/v1/responsaveis/1/status" \
   -H "Content-Type: application/json" \
   -d '{
     "ativo": true
@@ -327,7 +327,7 @@ curl -X PATCH "http://localhost:8000/api/v1/responsaveis/1/status" \
 
 #### Deletar
 ```bash
-curl -X DELETE "http://localhost:8000/api/v1/responsaveis/1"
+curl -X DELETE "http://localhost:5002/api/v1/responsaveis/1"
 ```
 
 ## Validações Implementadas
@@ -514,7 +514,7 @@ docs/ENTIDADE-RESPONSAVEL.md
 
 ### Modificados
 ```
-app.py                  # Inclusão de rotas e lifespan
+main.py                  # Inclusão de rotas e lifespan
 docs/CHANGELOG.md       # Documentação de mudanças
 ```
 
@@ -532,3 +532,6 @@ docs/CHANGELOG.md       # Documentação de mudanças
 Projeto Frameworks Full Stack - Prof. Giovani Bontempo - Faculdade Impacta
 
 **Data de Implementação**: 26 de Fevereiro de 2026
+
+
+

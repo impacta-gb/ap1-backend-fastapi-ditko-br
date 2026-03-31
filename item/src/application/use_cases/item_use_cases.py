@@ -37,14 +37,12 @@ class CreateItemUseCase:
         # via projeções sincronizadas por eventos Kafka.
         if not await self.repository.exists_local(item.local_id):
             raise ValueError(
-                f"Local com ID {item.local_id} não encontrado no módulo Item. "
-                "Aguarde sincronização do evento de local."
+                f"Local com ID {item.local_id} não encontrado no sistema."
             )
 
         if not await self.repository.exists_responsavel(item.responsavel_id):
             raise ValueError(
-                f"Responsável com ID {item.responsavel_id} não encontrado no módulo Item. "
-                "Aguarde sincronização do evento de responsável."
+                f"Responsável com ID {item.responsavel_id} não encontrado no sistema."
             )
 
         if not await self.repository.exists_responsavel_ativo(item.responsavel_id):
@@ -97,7 +95,7 @@ class UpdateItemUseCase:
         Executa a atualização de um item com validações de negócio.
         
         Regras de negócio:
-        - Não pode mudar status para 'devolvido' diretamente (use MarcarComoDevolvido)
+        - Não pode mudar status para 'devolvido' diretamente
         - Item deve existir
         """
         # Busca o item atual para comparar
@@ -109,7 +107,7 @@ class UpdateItemUseCase:
         # Regra de negócio: Não pode marcar como devolvido diretamente pelo update
         if existing_item.status != 'devolvido' and item.status == 'devolvido':
             raise ValueError(
-                "Para marcar um item como devolvido, use o processo de devolução apropriado"
+                "Para marcar um item como devolvido, use o processo de Devolução"
             )
         
         # Validação: data de encontro não pode ser futura

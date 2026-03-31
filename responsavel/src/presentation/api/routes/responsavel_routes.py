@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from responsavel.src.application.schemas.responsavel_schema import (
@@ -25,7 +25,11 @@ from responsavel.src.infrastructure.messaging.producer import ResponsavelKafkaPr
 
 router = APIRouter(tags=["Responsáveis"])
 
-@router.post("/", response_model=ResponsavelResponse, status_code=status.HTTP_201_CREATED)
+
+def success_response(message: str, data: Any):
+    return {"message": message, "data": data}
+
+@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_responsavel(
     responsavel_data: ResponsavelCreate,
     session: AsyncSession = Depends(get_session)
@@ -52,11 +56,11 @@ async def create_responsavel(
             telefone=created_responsavel.telefone,
         )
 
-        return created_responsavel
+        return success_response("Responsável criado com sucesso", created_responsavel)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     
-@router.get("/", response_model=ResponsavelListResponse)
+@router.get("/", response_model=dict)
 async def get_all_responsaveis(
     skip: int = 0,
     limit: int = 100,
@@ -70,17 +74,25 @@ async def get_all_responsaveis(
         responsaveis = await use_case.execute(skip, limit)
         total = await repository.count()
 
-        return ResponsavelListResponse(
+        payload = ResponsavelListResponse(
             responsaveis=responsaveis,
             total=total,
             skip=skip,
             limit=limit
         )
+        # Mensagem dinâmica baseada na quantidade de responsáveis
+        if total == 0:
+            message = "Nenhum responsável encontrado"
+        elif total == 1:
+            message = "1 responsável encontrado"
+        else:
+            message = f"{total} responsáveis encontrados"
+        return success_response(message, payload)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/ativo/{ativo_value}", response_model=List[ResponsavelResponse])
+@router.get("/ativo/{ativo_value}", response_model=dict)
 async def get_responsaveis_by_ativo(
     ativo_value: bool,
     session: AsyncSession = Depends(get_session)
@@ -91,12 +103,20 @@ async def get_responsaveis_by_ativo(
 
     try:
         responsaveis = await use_case.execute(ativo_value)
-        return responsaveis
+        # Mensagem dinâmica baseada na quantidade de responsáveis
+        status_text = "ativos" if ativo_value else "inativos"
+        if len(responsaveis) == 0:
+            message = f"Nenhum responsável {status_text} encontrado"
+        elif len(responsaveis) == 1:
+            message = f"1 responsável {status_text} encontrado"
+        else:
+            message = f"{len(responsaveis)} responsáveis {status_text} encontrados"
+        return success_response(message, responsaveis)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/{responsavel_id}", response_model=ResponsavelResponse)
+@router.get("/{responsavel_id}", response_model=dict)
 async def get_responsavel(
     responsavel_id: int,
     session: AsyncSession = Depends(get_session)
@@ -114,12 +134,12 @@ async def get_responsavel(
                 detail=f"Responsável com ID {responsavel_id} não encontrado"
             )
 
-        return responsavel
+        return success_response("Responsável encontrado com sucesso", responsavel)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.put("/{responsavel_id}", response_model=ResponsavelResponse)
+@router.put("/{responsavel_id}", response_model=dict)
 async def update_responsavel_full(
     responsavel_id: int,
     responsavel_data: ResponsavelUpdate,
@@ -161,13 +181,13 @@ async def update_responsavel_full(
             ativo=updated_responsavel.ativo,
         )
         
-        return updated_responsavel
+        return success_response("Responsável atualizado com sucesso", updated_responsavel)
     
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.patch("/{responsavel_id}", response_model=ResponsavelResponse)
+@router.patch("/{responsavel_id}", response_model=dict)
 async def update_responsavel_partial(
     responsavel_id: int,
     responsavel_data: ResponsavelPatch,
@@ -185,6 +205,13 @@ async def update_responsavel_partial(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Responsável com ID {responsavel_id} não encontrado"
+            )
+
+        patch_data = responsavel_data.model_dump(exclude_unset=True)
+        if not patch_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Informe ao menos um campo para atualização parcial"
             )
         
         # Cria entidade com os dados atualizados
@@ -209,13 +236,13 @@ async def update_responsavel_partial(
             ativo=updated_responsavel.ativo,
         )
         
-        return updated_responsavel
+        return success_response("Responsável atualizado com sucesso", updated_responsavel)
     
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.patch("/{responsavel_id}/status", response_model=ResponsavelResponse)
+@router.patch("/{responsavel_id}/status", response_model=dict)
 async def update_responsavel_status(
     responsavel_id: int,
     status_data: ResponsavelStatusUpdate,
@@ -257,13 +284,13 @@ async def update_responsavel_status(
             ativo=updated_responsavel.ativo,
         )
         
-        return updated_responsavel
+        return success_response("Status do responsável atualizado com sucesso", updated_responsavel)
     
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.delete("/{responsavel_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{responsavel_id}", response_model=dict, status_code=status.HTTP_200_OK)
 async def delete_responsavel(
     responsavel_id: int,
     session: AsyncSession = Depends(get_session)
@@ -284,6 +311,6 @@ async def delete_responsavel(
         producer = ResponsavelKafkaProducer()
         await producer.publish_responsavel_deletado(responsavel_id=responsavel_id)
 
-        return None
+        return success_response("Responsável deletado com sucesso", {"id": responsavel_id})
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

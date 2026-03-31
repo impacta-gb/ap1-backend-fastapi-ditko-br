@@ -5,25 +5,43 @@ Documentação prática para implementação e execução de testes no projeto.
 ## Estrutura de Testes
 
 ```
+item/tests/
+├── unit/                 # Entidade, use cases, schemas, exceptions, performance
+└── integration/          # Repository, end-to-end, API e consumers de eventos
+
+local/tests/
+├── unit/
+└── integration/
+
+responsavel/tests/
+├── unit/
+└── integration/
+
+reclamante/tests/
+├── unit/
+└── integration/
+
+devolucao/tests/
+├── unit/
+└── integration/
+
 tests/
-├── conftest.py           # Fixtures compartilhadas
-├── unit/                 # Testes unitários (sem dependências externas)
-├── integration/          # Testes de integração (com banco de dados)
-└── api/                  # Testes de endpoints HTTP
+└── integration/          # Testes transversais de Kafka entre módulos
 ```
 
 ## Comandos Principais
 
 ### Executar Todos os Testes
 ```bash
-pytest item/tests/ -v
+pytest -v
 ```
 
 ### Por Categoria
 ```bash
 pytest item/tests/unit/ -v              # Apenas unitários
-pytest item/tests/integration/ -v       # Apenas integração
-pytest item/tests/api/ -v               # Apenas API
+pytest item/tests/integration/ -v       # Integração do módulo item
+pytest item/tests/integration/test_item_api.py -v  # Apenas API do item
+pytest tests/integration/ -v            # Integração transversal (Kafka)
 ```
 
 ### Com Cobertura
@@ -124,6 +142,32 @@ pytest item/tests/unit/test_item_use_cases.py -v
 
 ---
 
+**Arquivo:** `item/tests/unit/test_item_exceptions.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Exceções de domínio | Valida erros customizados do módulo Item |
+
+**Executar:**
+```bash
+pytest item/tests/unit/test_item_exceptions.py -v
+```
+
+---
+
+**Arquivo:** `item/tests/unit/test_item_performance.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Performance | Mede tempo de operações do módulo Item |
+
+**Executar:**
+```bash
+pytest item/tests/unit/test_item_performance.py -v
+```
+
+---
+
 ### Testes de Integração
 
 **Arquivo:** `item/tests/integration/test_item_repository.py`
@@ -169,6 +213,19 @@ pytest item/tests/integration/test_item_repository.py -v
 **Executar:**
 ```bash
 pytest item/tests/integration/test_item_end_to_end.py -v
+```
+
+---
+
+**Arquivo:** `item/tests/integration/test_devolucao_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de devolução | Valida processamento de eventos de devolução no módulo Item |
+
+**Executar:**
+```bash
+pytest item/tests/integration/test_devolucao_event_consumer.py -v
 ```
 
 ---
@@ -439,6 +496,19 @@ pytest responsavel/tests/integration/test_responsavel_end_to_end.py -v
 
 ---
 
+**Arquivo:** `responsavel/tests/integration/test_item_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de item | Valida processamento de eventos de item no módulo Responsável |
+
+**Executar:**
+```bash
+pytest responsavel/tests/integration/test_item_event_consumer.py -v
+```
+
+---
+
 ### Testes de API
 
 **Arquivo:** `responsavel/tests/integration/test_responsavel_api.py`
@@ -650,6 +720,19 @@ pytest local/tests/integration/test_local_repository.py -v
 **Executar:**
 ```bash
 pytest local/tests/integration/test_local_end_to_end.py -v
+```
+
+---
+
+**Arquivo:** `local/tests/integration/test_item_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de item | Valida processamento de eventos de item no módulo Local |
+
+**Executar:**
+```bash
+pytest local/tests/integration/test_item_event_consumer.py -v
 ```
 
 ---
@@ -881,6 +964,19 @@ pytest devolucao/tests/integration/test_devolucao_repository.py -v
 **Executar:**
 ```bash
 pytest devolucao/tests/integration/test_devolucao_end_to_end.py -v
+```
+
+---
+
+**Arquivo:** `devolucao/tests/integration/test_item_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de item | Valida processamento de eventos de item no módulo Devolução |
+
+**Executar:**
+```bash
+pytest devolucao/tests/integration/test_item_event_consumer.py -v
 ```
 
 ---
@@ -1208,6 +1304,45 @@ pytest reclamante/tests/integration/test_reclamante_end_to_end.py -v
 
 ---
 
+**Arquivo:** `reclamante/tests/integration/test_item_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de item | Valida processamento de eventos de item no módulo Reclamante |
+
+**Executar:**
+```bash
+pytest reclamante/tests/integration/test_item_event_consumer.py -v
+```
+
+---
+
+**Arquivo:** `reclamante/tests/integration/test_devolucao_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de devolução | Valida processamento de eventos de devolução no módulo Reclamante |
+
+**Executar:**
+```bash
+pytest reclamante/tests/integration/test_devolucao_event_consumer.py -v
+```
+
+---
+
+**Arquivo:** `reclamante/tests/integration/test_responsavel_event_consumer.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Consumer de responsável | Valida processamento de eventos de responsável no módulo Reclamante |
+
+**Executar:**
+```bash
+pytest reclamante/tests/integration/test_responsavel_event_consumer.py -v
+```
+
+---
+
 ### Testes de API
 
 **Arquivo:** `reclamante/tests/integration/test_reclamante_api.py`
@@ -1254,6 +1389,49 @@ pytest reclamante/tests/integration/test_reclamante_end_to_end.py -v
 **Executar:**
 ```bash
 pytest reclamante/tests/integration/test_reclamante_api.py -v
+```
+
+---
+
+## Integração Transversal (Raiz)
+
+### Testes de Kafka entre Módulos
+
+**Arquivo:** `tests/integration/test_kafka_messaging.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Mensageria Kafka | Valida publicação e consumo no broker |
+
+**Executar:**
+```bash
+pytest tests/integration/test_kafka_messaging.py -v
+```
+
+---
+
+**Arquivo:** `tests/integration/test_kafka_producers.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Producers | Valida produtores Kafka dos módulos |
+
+**Executar:**
+```bash
+pytest tests/integration/test_kafka_producers.py -v
+```
+
+---
+
+**Arquivo:** `tests/integration/test_kafka_cross_module_integration.py`
+
+| Escopo | Descrição |
+|-------|-----------|
+| Fluxo cross-module | Valida integração orientada a eventos entre serviços |
+
+**Executar:**
+```bash
+pytest tests/integration/test_kafka_cross_module_integration.py -v
 ```
 
 ---
@@ -1313,4 +1491,4 @@ engine = create_async_engine(
 
 ---
 
-**Última atualização:** Março 2026 - Reclamante (85 testes implementados)
+**Última atualização:** Março 2026 - Guia ampliado com consumers e testes transversais de Kafka

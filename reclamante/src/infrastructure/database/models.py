@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.sql import func
-from reclamante.src.infrastructure.database.config import Base
+from .config import Base
 
 
 class ReclamanteModel(Base):

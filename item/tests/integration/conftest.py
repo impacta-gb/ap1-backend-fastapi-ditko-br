@@ -4,8 +4,9 @@ Configurações e fixtures para testes de integração
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy import insert
 from item.src.infrastructure.database.config import Base
-from item.src.infrastructure.database.models import ItemModel
+from item.src.infrastructure.database.models import ItemModel, LocalReferenceModel, ResponsavelReferenceModel
 
 
 # URL do banco de dados de teste (usa SQLite em memória)
@@ -36,7 +37,7 @@ async def test_engine():
 
 @pytest_asyncio.fixture
 async def test_session(test_engine):
-    """Cria sessão de teste"""
+    """Cria sessão de teste com dados de referência capturados"""
     async_session_maker = async_sessionmaker(
         test_engine,
         class_=AsyncSession,
@@ -44,5 +45,27 @@ async def test_session(test_engine):
     )
     
     async with async_session_maker() as session:
+        # Insere referências de teste para Local e Responsável
+        await session.execute(
+            insert(LocalReferenceModel).values(
+                id=1,
+                tipo="Departamento",
+                bairro="Centro",
+                descricao="Local de teste"
+            )
+        )
+        
+        await session.execute(
+            insert(ResponsavelReferenceModel).values(
+                id=1,
+                nome="Responsável Teste",
+                cargo="Gerenciador",
+                telefone="1234567890",
+                ativo=1
+            )
+        )
+        
+        await session.commit()
+        
         yield session
         await session.rollback()

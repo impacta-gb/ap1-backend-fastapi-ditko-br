@@ -1,4 +1,4 @@
-# Implementação da Entidade Item - Arquitetura Diplomata
+﻿# Implementação da Entidade Item - Arquitetura Diplomata
 
 ## O que foi implementado
 
@@ -108,6 +108,7 @@ Endpoints REST implementados:
 | GET | `/api/v1/items/{id}` | Buscar item por ID |
 | GET | `/api/v1/items/` | Listar todos (paginado) |
 | PUT | `/api/v1/items/{id}` | Atualizar item |
+| PATCH | `/api/v1/items/{id}` | Atualização parcial |
 | DELETE | `/api/v1/items/{id}` | Deletar item |
 | GET | `/api/v1/items/categoria/{categoria}` | Buscar por categoria |
 | GET | `/api/v1/items/status/{status}` | Buscar por status |
@@ -119,7 +120,7 @@ Endpoints REST implementados:
 
 ### 6. Arquivos de Configuração
 
-#### `app.py` - Atualizado
+#### `main.py` - Atualizado
 - FastAPI app com metadados
 - Lifespan para inicializar DB
 - Inclusão das rotas
@@ -170,18 +171,18 @@ poetry install
 
 ### 2. Executar a Aplicação
 ```bash
-poetry run uvicorn app:app --reload
+poetry run uvicorn main:app --reload --port 5000
 ```
 
 ### 3. Acessar Documentação
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:5000/docs
+- ReDoc: http://localhost:5000/redoc
 
 ### 4. Testar Endpoints
 
 #### Criar Item
 ```bash
-curl -X POST "http://localhost:8000/api/v1/items/" \
+curl -X POST "http://localhost:5000/api/v1/items/" \
   -H "Content-Type: application/json" \
   -d '{
     "nome": "Carteira de couro",
@@ -196,17 +197,17 @@ curl -X POST "http://localhost:8000/api/v1/items/" \
 
 #### Listar Todos
 ```bash
-curl -X GET "http://localhost:8000/api/v1/items/"
+curl -X GET "http://localhost:5000/api/v1/items/"
 ```
 
 #### Buscar por ID
 ```bash
-curl -X GET "http://localhost:8000/api/v1/items/1"
+curl -X GET "http://localhost:5000/api/v1/items/1"
 ```
 
 #### Atualizar
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/items/1" \
+curl -X PUT "http://localhost:5000/api/v1/items/1" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "devolvido"
@@ -215,7 +216,7 @@ curl -X PUT "http://localhost:8000/api/v1/items/1" \
 
 #### Deletar
 ```bash
-curl -X DELETE "http://localhost:8000/api/v1/items/1"
+curl -X DELETE "http://localhost:5000/api/v1/items/1"
 ```
 
 ## Próximos Passos
@@ -273,3 +274,7 @@ A primeira entidade foi implementada completamente seguindo a Arquitetura Diplom
 
 **Grupo Ditko.br**
 Projeto Frameworks Full Stack - Prof. Giovani Bontempo - Faculdade Impacta
+
+
+
+

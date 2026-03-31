@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.sql import func
-from local.src.infrastructure.database.config import Base
+from .config import Base
 
 
 class LocalModel(Base):

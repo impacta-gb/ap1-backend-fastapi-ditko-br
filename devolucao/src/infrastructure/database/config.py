@@ -2,12 +2,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import text
 import os
+from pathlib import Path
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./devolucao.db")
+DEFAULT_DB_PATH = Path(__file__).resolve().parents[3] / "devolucao.db"
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DEFAULT_DB_PATH.as_posix()}")
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
+    echo=False,
     future=True
 )
 
@@ -18,6 +20,9 @@ async_session_maker = async_sessionmaker(
 )
 
 Base = declarative_base()
+
+# Importa os modelos para registrar tabelas no metadata antes do create_all.
+from . import models  # noqa: E402,F401
 
 async def get_session() -> AsyncSession:
     """Dependency para obter sessão do banco de dados"""

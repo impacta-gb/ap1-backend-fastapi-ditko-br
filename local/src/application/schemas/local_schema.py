@@ -12,6 +12,11 @@ class LocalCreate(LocalBase):
     """Schema para criação de Local"""
 
 class LocalUpdate(LocalBase):
+    """Schema para atualização completa de Local (PUT)."""
+
+
+class LocalPatch(BaseModel):
+    """Schema para atualização parcial de Local (PATCH)."""
     tipo: Optional[str] = Field(None, min_length = 1, max_length = 255)
     descricao: Optional[str] = Field(None, min_length = 1, max_length = 255)
     bairro: Optional[str] = Field(None, min_length = 1, max_length = 255)

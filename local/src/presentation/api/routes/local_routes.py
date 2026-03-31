@@ -1,10 +1,11 @@
-from typing import List
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from local.src.application.schemas.local_schema import (
     LocalCreate,
     LocalResponse,
     LocalUpdate,
+    LocalPatch,
     LocalListResponse,
 )
 from local.src.application.use_cases.local_use_cases import (
@@ -22,7 +23,11 @@ from local.src.infrastructure.messaging.producer import LocalKafkaProducer
 
 router = APIRouter(tags=["Locais"])
 
-@router.post("/", response_model=LocalResponse, status_code=status.HTTP_201_CREATED)
+
+def success_response(message: str, data: Any):
+    return {"message": message, "data": data}
+
+@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_local(
     local_data: LocalCreate,
     session: AsyncSession = Depends(get_session)
@@ -48,11 +53,11 @@ async def create_local(
             descricao=created_local.descricao,
         )
 
-        return created_local
+        return success_response("Local criado com sucesso", created_local)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.get("/", response_model=LocalListResponse)
+@router.get("/", response_model=dict)
 async def get_all_locals(
     skip: int = 0,
     limit: int = 100,
@@ -66,16 +71,24 @@ async def get_all_locals(
         locals = await use_case.execute(skip, limit)
         total = await repository.count()
 
-        return LocalListResponse(
+        payload = LocalListResponse(
             locals=locals,
             total=total,
             skip=skip,
             limit=limit
         )
+        # Mensagem dinâmica baseada na quantidade de locais
+        if total == 0:
+            message = "Nenhum local encontrado"
+        elif total == 1:
+            message = "1 local encontrado"
+        else:
+            message = f"{total} locais encontrados"
+        return success_response(message, payload)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.get("/bairro/{bairro}", response_model=List[LocalResponse])
+@router.get("/bairro/{bairro}", response_model=dict)
 async def get_locals_by_bairro(
     bairro: str,
     session: AsyncSession = Depends(get_session)
@@ -86,11 +99,18 @@ async def get_locals_by_bairro(
 
     try:
         locals = await use_case.execute(bairro)
-        return locals
+        # Mensagem dinâmica baseada na quantidade de locais
+        if len(locals) == 0:
+            message = f"Nenhum local encontrado no bairro '{bairro}'"
+        elif len(locals) == 1:
+            message = f"1 local encontrado no bairro '{bairro}'"
+        else:
+            message = f"{len(locals)} locais encontrados no bairro '{bairro}'"
+        return success_response(message, locals)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.get("/{local_id}", response_model=LocalResponse)
+@router.get("/{local_id}", response_model=dict)
 async def get_local(
     local_id: int,
     session: AsyncSession = Depends(get_session)
@@ -108,11 +128,11 @@ async def get_local(
                 detail=f"local com ID {local_id} não encontrado"
             )
 
-        return local
+        return success_response("Local encontrado com sucesso", local)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.put("/{local_id}", response_model=LocalResponse)
+@router.put("/{local_id}", response_model=dict)
 async def update_local(
     local_id: int,
     local_data: LocalUpdate,
@@ -132,15 +152,64 @@ async def update_local(
                 detail=f"Local com ID {local_id} não encontrado"
             )
         
-        # Atualiza apenas os campos fornecidos
-        update_data = local_data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(existing_local, field, value)
-        
-        # Revalida a entidade após as modificações
-        existing_local.__post_init__()
+        updated_local_entity = Local(
+            id=local_id,
+            tipo=local_data.tipo,
+            descricao=local_data.descricao,
+            bairro=local_data.bairro,
+            created_at=existing_local.created_at,
+            updated_at=existing_local.updated_at,
+        )
         
         # Executa a atualização
+        update_use_case = UpdateLocalUseCase(repository)
+        updated_local = await update_use_case.execute(local_id, updated_local_entity)
+
+        producer = LocalKafkaProducer()
+        await producer.publish_local_atualizado(
+            local_id=updated_local.id,
+            tipo=updated_local.tipo,
+            bairro=updated_local.bairro,
+            descricao=updated_local.descricao,
+        )
+        
+        return success_response("Local atualizado com sucesso", updated_local)
+    
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.patch("/{local_id}", response_model=dict)
+async def patch_local(
+    local_id: int,
+    local_data: LocalPatch,
+    session: AsyncSession = Depends(get_session)
+):
+    """Atualiza parcialmente um local existente"""
+    repository = LocalRepositoryImpl(session)
+
+    try:
+        get_use_case = GetLocalByIdUseCase(repository)
+        existing_local = await get_use_case.execute(local_id)
+
+        if not existing_local:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Local com ID {local_id} não encontrado"
+            )
+
+        patch_data = local_data.model_dump(exclude_unset=True)
+        if not patch_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Informe ao menos um campo para atualização parcial"
+            )
+
+        for field, value in patch_data.items():
+            setattr(existing_local, field, value)
+
+        existing_local.__post_init__()
+
         update_use_case = UpdateLocalUseCase(repository)
         updated_local = await update_use_case.execute(local_id, existing_local)
 
@@ -151,12 +220,11 @@ async def update_local(
             bairro=updated_local.bairro,
             descricao=updated_local.descricao,
         )
-        
-        return updated_local
-    
+
+        return success_response("Local atualizado com sucesso", updated_local)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-@router.delete("/{local_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{local_id}", response_model=dict, status_code=status.HTTP_200_OK)
 async def delete_local(
     local_id: int,
     session: AsyncSession = Depends(get_session)
@@ -176,4 +244,4 @@ async def delete_local(
     producer = LocalKafkaProducer()
     await producer.publish_local_deletado(local_id=local_id)
     
-    return None
+    return success_response("Local deletado com sucesso", {"id": local_id})

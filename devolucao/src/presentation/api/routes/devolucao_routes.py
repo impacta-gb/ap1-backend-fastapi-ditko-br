@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from devolucao.src.application.schemas.devolucao_schema import (
@@ -27,7 +27,11 @@ from devolucao.src.infrastructure.messaging.producer import DevolucaoKafkaProduc
 router = APIRouter(tags=["Devoluções"])
 
 
-@router.post("/", response_model=DevolucaoResponse, status_code=status.HTTP_201_CREATED)
+def success_response(message: str, data: Any):
+    return {"message": message, "data": data}
+
+
+@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_devolucao(
     devolucao_data: DevolucaoCreate,
     session: AsyncSession = Depends(get_session)
@@ -53,12 +57,12 @@ async def create_devolucao(
             reclamante_id=created.reclamante_id,
         )
 
-        return created
+        return success_response("Devolução criada com sucesso", created)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/", response_model=DevolucaoListResponse)
+@router.get("/", response_model=dict)
 async def get_all_devolucoes(
     skip: int = 0,
     limit: int = 100,
@@ -71,17 +75,25 @@ async def get_all_devolucoes(
     try:
         devolucoes = await use_case.execute(skip, limit)
         total = await CountDevolucoesUseCase(repository).execute()
-        return DevolucaoListResponse(
+        payload = DevolucaoListResponse(
             devolucoes=devolucoes,
             total=total,
             skip=skip,
             limit=limit
         )
+        # Mensagem dinâmica baseada na quantidade de devoluções
+        if total == 0:
+            message = "Nenhuma devolução encontrada"
+        elif total == 1:
+            message = "1 devolução encontrada"
+        else:
+            message = f"{total} devoluções encontradas"
+        return success_response(message, payload)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/data/{data}", response_model=List[DevolucaoResponse])
+@router.get("/data/{data}", response_model=dict)
 async def get_devolucoes_by_data(
     data: datetime,
     session: AsyncSession = Depends(get_session)
@@ -91,12 +103,21 @@ async def get_devolucoes_by_data(
     use_case = GetDevolucoesByDataUseCase(repository)
 
     try:
-        return await use_case.execute(data)
+        devolucoes = await use_case.execute(data)
+        # Mensagem dinâmica baseada na quantidade de devoluções
+        data_str = data.strftime("%d/%m/%Y")
+        if len(devolucoes) == 0:
+            message = f"Nenhuma devolução encontrada para a data {data_str}"
+        elif len(devolucoes) == 1:
+            message = f"1 devolução encontrada para a data {data_str}"
+        else:
+            message = f"{len(devolucoes)} devoluções encontradas para a data {data_str}"
+        return success_response(message, devolucoes)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/{devolucao_id}", response_model=DevolucaoResponse)
+@router.get("/{devolucao_id}", response_model=dict)
 async def get_devolucao(
     devolucao_id: int,
     session: AsyncSession = Depends(get_session)
@@ -114,12 +135,12 @@ async def get_devolucao(
                 detail=f"Devolução com ID {devolucao_id} não encontrada"
             )
 
-        return devolucao
+        return success_response("Devolução encontrada com sucesso", devolucao)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.put("/{devolucao_id}", response_model=DevolucaoResponse)
+@router.put("/{devolucao_id}", response_model=dict)
 async def update_devolucao_full(
     devolucao_id: int,
     devolucao_data: DevolucaoUpdate,
@@ -156,13 +177,13 @@ async def update_devolucao_full(
             reclamante_id=updated.reclamante_id,
         )
 
-        return updated
+        return success_response("Devolução atualizada com sucesso", updated)
 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.patch("/{devolucao_id}", response_model=DevolucaoResponse)
+@router.patch("/{devolucao_id}", response_model=dict)
 async def update_devolucao_partial(
     devolucao_id: int,
     devolucao_data: DevolucaoPatch,
@@ -179,6 +200,13 @@ async def update_devolucao_partial(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Devolução com ID {devolucao_id} não encontrada"
+            )
+
+        patch_data = devolucao_data.model_dump(exclude_unset=True)
+        if not patch_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Informe ao menos um campo para atualização parcial"
             )
 
         updated_entity = Devolucao(
@@ -199,13 +227,13 @@ async def update_devolucao_partial(
             reclamante_id=updated.reclamante_id,
         )
 
-        return updated
+        return success_response("Devolução atualizada com sucesso", updated)
 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.delete("/{devolucao_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{devolucao_id}", response_model=dict, status_code=status.HTTP_200_OK)
 async def delete_devolucao(
     devolucao_id: int,
     session: AsyncSession = Depends(get_session)
@@ -237,6 +265,6 @@ async def delete_devolucao(
             reclamante_id=existing.reclamante_id,
         )
 
-        return None
+        return success_response("Devolução deletada com sucesso", {"id": devolucao_id})
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

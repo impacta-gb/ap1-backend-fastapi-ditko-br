@@ -7,6 +7,157 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Não Lançado]
 
+### Corrigido — 29 de Março de 2026
+
+#### 47. Importação faltante de JSONResponse em todos os serviços
+- **Descrição**: Adiciona importação `from fastapi.responses import JSONResponse` nos cinco main.py dos microserviços.
+- **Arquivos**:
+  - `item/main.py`
+  - `local/main.py`
+  - `responsavel/main.py`
+  - `devolucao/main.py`
+  - `reclamante/main.py`
+- **Impacto**: Resolve referência indefinida em handlers de exceção; todas as APIs compilam sem erro.
+
+#### 48. Cache stale de imagens Docker
+- **Descrição**: Reconstrução de imagens Docker para item, local e reclamante com --force-recreate para sincronizar portas internas.
+- **Causa**: Imagens antigas em cache tinham comando Uvicorn com portas incorretas (item em 5004, local em 5000, reclamante em 5001).
+- **Solução**: `docker compose up -d --build --force-recreate item local reclamante`
+- **Impacto**: Acesso HTTP em localhost nas portas esperadas (5000:5000, 5001:5001, 5004:5004).
+
+#### 57. Remoção de arquivos obsoletos (bootstrap.py e item/__init__.py tradicionais)
+- **Descrição**: Limpeza de código legado pós-refactoring de lifecycle e bootstrap.
+- **Arquivos removidos**:
+  - `bootstrap.py` (agora integrado nos main.py de cada serviço)
+  - Inicialização condicional em `item/__init__.py`
+- **Impacto**: Codebase mais limpo e manutenção de state centralizado nos mains de cada serviço.
+
+### Documentação — 29 de Março de 2026
+
+#### 49. Atualização de contagem de testes e cobertura de suites
+- **Descrição**: Correção de contagem de testes em README e ampliação de cobertura em TESTS.md.
+- **Mudanças**:
+  - README.md: 116 testes → **613 testes** (incluindo unitários, integração, E2E, consumers, cross-module, exceptions, performance)
+  - docs/TESTS.md: Adição de seções para consumers de eventos por módulo e testes transversais de Kafka
+  - Validação com `pytest --collect-only`
+- **Impacto**: Documentação alinhada com realidade da suíte; visibilidade completa da cobertura de testes.
+
+#### 56. Atualização de docker-compose.yml e Dockerfiles
+- **Descrição**: Padronização de configurações de Docker para todos os serviços com portas e volumes corretos.
+- **Arquivos**:
+  - `docker-compose.yml`
+  - `item/Dockerfile`
+  - `local/Dockerfile`
+  - `responsavel/Dockerfile`
+  - `reclamante/Dockerfile`
+  - `devolucao/Dockerfile`
+- **Mudanças principais**:
+  - Sincronização de portas internas vs externas (item:5000, local:5001, responsavel:5002, reclamante:5004, devolucao:5003)
+  - Volumes corretos para SQLite de cada serviço
+  - Comando Uvicorn com host 0.0.0.0 para acesso externo
+- **Impacto**: Containers executam corretamente com portas esperadas e conexão de rede intrasserviços.
+
+### Adicionado — 28 de Março de 2026
+
+#### 50. Separação de inicialização com bootstrap por serviço
+- **Descrição**: Refactoring de bootstrap centralizado para inicialização independente em cada microsserviço.
+- **Mudanças**:
+  - Cada `main.py` agora inicializa producers/consumers Kafka diretamente no startup
+  - Reconexão de mensageria tratada localmente com retry logic
+  - Removida dependência de bootstrap.py global
+  - `bootstrap.py` movido para contexto apenas de testes
+- **Arquivos alterados**:
+  - `item/main.py`
+  - `local/main.py`
+  - `responsavel/main.py`
+  - `reclamante/main.py`
+  - `devolucao/main.py`
+- **Impacto**: Cada serviço é independente; facilita deploy em clusters diferentes e isolamento de falhas.
+
+#### 51. Organização de lifecycle e bootstrap de mensageria nos mains
+- **Descrição**: Consolidação de lógica de lifecycle (startup/shutdown) nos mains com composição clara de dependências.
+- **Padrão implementado**:
+  ```python
+  @app.on_event("startup")
+  async def startup():
+      # Inicialização de mensageria
+      # Verificação de conectividade
+      # Setup de producers/consumers
+  
+  @app.on_event("shutdown")
+  async def shutdown():
+      # Graceful shutdown de producers/consumers
+      # Fechamento de conexões
+  ```
+- **Benefício**: Visibilidade clara de quando componentes estão prontos; melhor tratamento de erros no startup.
+
+#### 52. Ajustes de validações e contratos de entrada
+- **Descrição**: Aprimoramento de schemas Pydantic e validação de dados de entrada em todos os domínios.
+- **Mudanças**:
+  - Validações mais rigorosas em schemas (campos obrigatórios, tamanho mínimo/máximo)
+  - Mensagens de erro padronizadas
+  - Sincronização de contratos HTTP entre domínios
+  - Tratamento de edge cases em create/update
+- **Arquivos impactados**:
+  - `item/src/application/schemas/`
+  - `local/src/application/schemas/`
+  - `responsavel/src/application/schemas/`
+  - `reclamante/src/application/schemas/`
+  - `devolucao/src/application/schemas/`
+- **Impacto**: Melhor experiência de cliente com validação antecipada e mensagens claras.
+
+#### 53. Refactoring de configurações e modelos em cada entidade
+- **Descrição**: Harmonização de padrões de configuração de banco de dados e modelos ORM entre serviços.
+- **Mudanças**:
+  - Extração de constantes de banco em `infrastructure/database/config.py` 
+  - Padronização de modelos SQLAlchemy com campos comuns (id, created_at, updated_at)
+  - Índices consistentes em campos de busca frequente
+  - Type hints completos em modelos
+- **Arquivos impactados**:
+  - `item/src/infrastructure/database/config.py`
+  - `local/src/infrastructure/database/config.py`
+  - `responsavel/src/infrastructure/database/config.py`
+  - `reclamante/src/infrastructure/database/config.py`
+  - `devolucao/src/infrastructure/database/config.py`
+- **Impacto**: Manutenção simplificada; maior consistência para operações futuras de sharding/replicação.
+
+### Corrigido — 27 de Março de 2026
+
+#### 54. Testes adaptados e independentes de bootstrap externo
+- **Descrição**: Refactoring de testes para não depender de bootstrap.py central; cada modulo isola sua setup.
+- **Mudanças principais**:
+  - `conftest.py` em cada módulo agora cria app e client localmente
+  - Fixtures de banco de dados por teste (isolamento)
+  - Desacoplamento de producers/consumers em testes unitários
+  - Testes de integração Kafka com Testcontainers ou mock
+- **Testes adaptados**:
+  - `item/tests/integration/`
+  - `local/tests/integration/`
+  - `responsavel/tests/integration/`
+  - `reclamante/tests/integration/`
+  - `devolucao/tests/integration/`
+- **Impacto**: Tests rodam em paralelo sem conflitos; setup/teardown mais previsível.
+
+#### 55. Remoção de use cases legados para sincronização de projeções
+- **Descrição**: Limpeza de código não utilizado pós-arquitetura de eventos.
+- **Use cases removidos**:
+  - Sincronização síncrona de projeções via RPC
+  - Cache em memória de entidades
+  - Triggers de atualização em cascata
+- **Impacto**: Surface area de código reduzida; menos complexidade cognitiva; eventualmente events podem refazer projeções via Kafka.
+
+### Documentação — 25 de Março de 2026
+
+#### Atualização geral de arquivos de documentação
+- **Descrição**: Revisão e atualização de documentação técnica pós-refactorings.
+- **Arquivos atualizados**:
+  - `docs/ARQUITETURA.md`: Diagrama de fluxo de mensageria, explicação de causas de refactoring
+  - `docs/DOCKER.md`: Seção sobre cache de imagens e troubleshooting de portas
+  - `docs/KAFKA.md`: Seção sobre reconexão e retry logic
+  - `docs/ENTIDADE-ITEM.md`, `docs/ENTIDADE-LOCAL.md`, `docs/ENTIDADE-RESPONSAVEL.md`, `docs/ENTIDADE-RECLAMANTE.md`, `docs/ENTIDADE-DEVOLUCAO.md`: Endpoints atualizados com PATCH, portas corretas
+  - `docs/TESTS.md`: Expansão com consumers e testes cross-module
+- **Impacto**: Documentação sincronizada com código; onboarding mais rápido para novos desenvolvedores.
+
 ### Adicionado — 24 de Março de 2026
 
 #### 40. Infraestrutura de mensageria Kafka para todos os domínios

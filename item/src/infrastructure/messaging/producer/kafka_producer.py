@@ -3,6 +3,7 @@ Producer Kafka para publicar eventos do microserviço de Item
 """
 import json
 import logging
+import os
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class ItemKafkaProducer:
         try:
             from aiokafka import AIOKafkaProducer
             self.producer = AIOKafkaProducer(
-                bootstrap_servers='localhost:9092'
+                bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
             )
             await self.producer.start()
             logger.info("ItemKafkaProducer iniciado com sucesso")
@@ -52,7 +53,7 @@ class ItemKafkaProducer:
             except Exception as e:
                 logger.error(f"Erro ao parar ItemKafkaProducer: {e}")
     
-    async def publish_item_criado(self, item_id: int, descricao: str, status: str, local_id: int, responsavel_id: int):
+    async def publish_item_criado(self, item_id: int, nome: str, descricao: str, status: str, local_id: int, responsavel_id: int):
         """Publica evento de item criado"""
         await self._ensure_started()
         if not self.producer:
@@ -65,6 +66,7 @@ class ItemKafkaProducer:
                 "aggregate_id": str(item_id),
                 "data": {
                     "item_id": item_id,
+                    "nome": nome,
                     "descricao": descricao,
                     "status": status,
                     "local_id": local_id,
@@ -90,6 +92,7 @@ class ItemKafkaProducer:
                     "aggregate_id": str(item_id),
                     "data": {
                         "item_id": item_id,
+                        "nome": nome,
                         "descricao": descricao,
                         "status": status,
                         "local_id": local_id,
@@ -104,7 +107,7 @@ class ItemKafkaProducer:
             except Exception as retry_error:
                 logger.error(f"Erro ao publicar evento item.criado após reconexão: {retry_error}")
 
-    async def publish_item_atualizado(self, item_id: int, descricao: str, status: str, local_id: int, responsavel_id: int):
+    async def publish_item_atualizado(self, item_id: int, nome: str, descricao: str, status: str, local_id: int, responsavel_id: int):
         """Publica evento de item atualizado"""
         await self._ensure_started()
         if not self.producer:
@@ -117,6 +120,7 @@ class ItemKafkaProducer:
                 "aggregate_id": str(item_id),
                 "data": {
                     "item_id": item_id,
+                    "nome": nome,
                     "descricao": descricao,
                     "status": status,
                     "local_id": local_id,
@@ -142,6 +146,7 @@ class ItemKafkaProducer:
                     "aggregate_id": str(item_id),
                     "data": {
                         "item_id": item_id,
+                        "nome": nome,
                         "descricao": descricao,
                         "status": status,
                         "local_id": local_id,

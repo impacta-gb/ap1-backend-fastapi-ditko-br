@@ -4,6 +4,7 @@ Cada microserviço pode herdar dessa classe para processar eventos
 """
 import json
 import logging
+import os
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class KafkaConsumer(ABC):
             from aiokafka import AIOKafkaConsumer
             self.consumer = AIOKafkaConsumer(
                 *self.topics,
-                bootstrap_servers='localhost:9092',
+                bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
                 group_id=self.group_id,
                 auto_offset_reset='earliest',
                 value_deserializer=lambda m: json.loads(m.decode('utf-8'))
@@ -39,6 +40,7 @@ class KafkaConsumer(ABC):
         except Exception as e:
             logger.warning(f"Consumer {self.__class__.__name__} não pôde conectar: {e}")
             self.consumer = None
+            raise
     
     async def stop(self):
         """Para o consumer"""

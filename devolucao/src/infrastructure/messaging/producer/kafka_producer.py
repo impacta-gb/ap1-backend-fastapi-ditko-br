@@ -3,6 +3,7 @@ Producer Kafka para publicar eventos do microserviço de Devolucao
 """
 import json
 import logging
+import os
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class DevolucaoKafkaProducer:
         try:
             from aiokafka import AIOKafkaProducer
             self.producer = AIOKafkaProducer(
-                bootstrap_servers='localhost:9092'
+                bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
             )
             await self.producer.start()
             logger.info("DevolucaoKafkaProducer iniciado com sucesso")

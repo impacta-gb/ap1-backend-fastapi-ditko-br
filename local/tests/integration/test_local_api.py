@@ -2,13 +2,37 @@
 Testes de integração da API REST de Local
 Testa os endpoints HTTP, validações, status codes e serialização
 """
+import sys
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from unittest.mock import AsyncMock, patch
+
+# Adicionar o diretório local ao PYTHONPATH para importar main.py
+local_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(local_dir))
+
 from local.src.infrastructure.database.config import Base, get_session
-from app import app
+
+with patch("src.infrastructure.messaging.bootstrap.MessagingBootstrap") as MockMessagingBootstrap:
+    bootstrap_instance = MockMessagingBootstrap.return_value
+    bootstrap_instance.start_producers = AsyncMock(return_value=None)
+    bootstrap_instance.start_consumers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_producers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_consumers = AsyncMock(return_value=None)
+    from main import app
+
+
+def payload_data(response):
+    """Extrai o payload de sucesso, aceitando contrato antigo e novo."""
+    body = response.json()
+    if isinstance(body, dict) and "data" in body:
+        return body["data"]
+    return body
 
 
 # Fixture para criar um banco de dados de teste em memória
@@ -66,7 +90,7 @@ class TestCreateLocalAPI:
 
         # Assert
         assert response.status_code == 201
-        data = response.json()
+        data = payload_data(response)
         assert data["tipo"] == "Metrô"
         assert data["descricao"] == "Estação Sé - Plataforma Central"
         assert data["bairro"] == "Centro"
@@ -145,14 +169,14 @@ class TestGetLocalByIdAPI:
             "bairro": "Moema"
         }
         create_response = client.post("/api/v1/locais/", json=create_data)
-        local_id = create_response.json()["id"]
+        local_id = payload_data(create_response)["id"]
 
         # Act
         response = client.get(f"/api/v1/locais/{local_id}")
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["id"] == local_id
         assert data["tipo"] == "Parque"
         assert data["bairro"] == "Moema"
@@ -184,7 +208,7 @@ class TestGetAllLocaisAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert "locals" in data
         assert "total" in data
 
@@ -195,7 +219,7 @@ class TestGetAllLocaisAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["skip"] == 0
         assert data["limit"] == 10
 
@@ -228,7 +252,7 @@ class TestUpdateLocalAPI:
             "bairro": "Centro"
         }
         create_response = client.post("/api/v1/locais/", json=create_data)
-        local_id = create_response.json()["id"]
+        local_id = payload_data(create_response)["id"]
 
         # Act
         update_data = {
@@ -240,7 +264,7 @@ class TestUpdateLocalAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["tipo"] == "Metrô Linha 3"
         assert data["descricao"] == "Estação Atualizada"
 
@@ -272,7 +296,7 @@ class TestDeleteLocalAPI:
             "bairro": "Brás"
         }
         create_response = client.post("/api/v1/locais/", json=create_data)
-        local_id = create_response.json()["id"]
+        local_id = payload_data(create_response)["id"]
 
         # Act
         response = client.delete(f"/api/v1/locais/{local_id}")
@@ -290,6 +314,41 @@ class TestDeleteLocalAPI:
         response = client.delete("/api/v1/locais/9999")
 
         # Assert
+        assert response.status_code == 404
+
+
+class TestPatchLocalAPI:
+    """Testes para PATCH /api/v1/locais/{local_id}"""
+
+    def test_patch_local_com_sucesso(self, client):
+        create_response = client.post(
+            "/api/v1/locais/",
+            json={"tipo": "Metrô", "descricao": "Original", "bairro": "Centro"},
+        )
+        local_id = payload_data(create_response)["id"]
+
+        response = client.patch(
+            f"/api/v1/locais/{local_id}",
+            json={"descricao": "Atualizado por patch"},
+        )
+
+        assert response.status_code == 200
+        data = payload_data(response)
+        assert data["descricao"] == "Atualizado por patch"
+
+    def test_patch_local_vazio_retorna_400(self, client):
+        create_response = client.post(
+            "/api/v1/locais/",
+            json={"tipo": "Metrô", "descricao": "Original", "bairro": "Centro"},
+        )
+        local_id = payload_data(create_response)["id"]
+
+        response = client.patch(f"/api/v1/locais/{local_id}", json={})
+
+        assert response.status_code == 400
+
+    def test_patch_local_inexistente(self, client):
+        response = client.patch("/api/v1/locais/9999", json={"bairro": "Novo"})
         assert response.status_code == 404
 
 
@@ -312,7 +371,7 @@ class TestGetLocalsByBairroAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert isinstance(data, list)
         assert len(data) >= 2
         assert all(l["bairro"] == "Centro" for l in data)
@@ -324,7 +383,7 @@ class TestGetLocalsByBairroAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert isinstance(data, list)
         assert len(data) == 0
 

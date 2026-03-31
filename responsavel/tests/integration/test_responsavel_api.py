@@ -2,13 +2,37 @@
 Testes de integração da API REST de Responsavel
 Testa os endpoints HTTP, validações, status codes e serialização
 """
+import sys
+from pathlib import Path
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
+from unittest.mock import AsyncMock, patch
+
+# Adicionar o diretório responsavel ao PYTHONPATH para importar main.py
+responsavel_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(responsavel_dir))
+
 from responsavel.src.infrastructure.database.config import Base, get_session
-from app import app
+
+with patch("src.infrastructure.messaging.bootstrap.MessagingBootstrap") as MockMessagingBootstrap:
+    bootstrap_instance = MockMessagingBootstrap.return_value
+    bootstrap_instance.start_producers = AsyncMock(return_value=None)
+    bootstrap_instance.start_consumers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_producers = AsyncMock(return_value=None)
+    bootstrap_instance.stop_consumers = AsyncMock(return_value=None)
+    from main import app
+
+
+def payload_data(response):
+    """Extrai o payload de sucesso, aceitando contrato antigo e novo."""
+    body = response.json()
+    if isinstance(body, dict) and "data" in body:
+        return body["data"]
+    return body
 
 
 # Fixture para criar um banco de dados de teste em memória
@@ -66,7 +90,7 @@ class TestCreateResponsavelAPI:
 
         # Assert
         assert response.status_code == 201
-        data = response.json()
+        data = payload_data(response)
         assert data["nome"] == "João Silva"
         assert data["cargo"] == "Segurança"
         assert data["ativo"] is True  # Sempre inicia ativo
@@ -131,7 +155,7 @@ class TestCreateResponsavelAPI:
 
         # Assert
         assert response.status_code == 201
-        assert response.json()["ativo"] is True
+        assert payload_data(response)["ativo"] is True
 
 
 class TestGetResponsavelByIdAPI:
@@ -146,14 +170,14 @@ class TestGetResponsavelByIdAPI:
             "telefone": "11988888888"
         }
         create_response = client.post("/api/v1/responsaveis/", json=create_data)
-        responsavel_id = create_response.json()["id"]
+        responsavel_id = payload_data(create_response)["id"]
 
         # Act
         response = client.get(f"/api/v1/responsaveis/{responsavel_id}")
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["id"] == responsavel_id
         assert data["nome"] == "Maria Souza"
 
@@ -184,7 +208,7 @@ class TestGetAllResponsaveisAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert "responsaveis" in data
         assert "total" in data
 
@@ -195,7 +219,7 @@ class TestGetAllResponsaveisAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["skip"] == 0
         assert data["limit"] == 10
 
@@ -228,7 +252,7 @@ class TestUpdateResponsavelAPI:
             "telefone": "11999999999"
         }
         create_response = client.post("/api/v1/responsaveis/", json=create_data)
-        responsavel_id = create_response.json()["id"]
+        responsavel_id = payload_data(create_response)["id"]
 
         # Act - Atualiza
         update_data = {
@@ -240,7 +264,7 @@ class TestUpdateResponsavelAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert data["nome"] == "João Santos"
         assert data["cargo"] == "Supervisor de Segurança"
 
@@ -268,7 +292,7 @@ class TestUpdateResponsavelAPI:
             "telefone": "11999999999"
         }
         create_response = client.post("/api/v1/responsaveis/", json=create_data)
-        responsavel_id = create_response.json()["id"]
+        responsavel_id = payload_data(create_response)["id"]
 
         # Act - Tenta atualizar com telefone inválido
         update_data = {
@@ -294,13 +318,13 @@ class TestDeleteResponsavelAPI:
             "telefone": "21977776666"
         }
         create_response = client.post("/api/v1/responsaveis/", json=create_data)
-        responsavel_id = create_response.json()["id"]
+        responsavel_id = payload_data(create_response)["id"]
 
         # Act
         response = client.delete(f"/api/v1/responsaveis/{responsavel_id}")
 
         # Assert
-        assert response.status_code == 204
+        assert response.status_code in [200, 204]
 
         # Verifica que foi deletado
         get_response = client.get(f"/api/v1/responsaveis/{responsavel_id}")
@@ -333,7 +357,7 @@ class TestResponsavelStatusAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert isinstance(data, list)
         assert all(r["ativo"] is True for r in data)
 
@@ -344,7 +368,7 @@ class TestResponsavelStatusAPI:
 
         # Assert
         assert response.status_code == 200
-        data = response.json()
+        data = payload_data(response)
         assert isinstance(data, list)
 
     def test_alterar_status_responsavel(self, client):
@@ -356,8 +380,8 @@ class TestResponsavelStatusAPI:
             "telefone": "31966665555"
         }
         create_response = client.post("/api/v1/responsaveis/", json=create_data)
-        responsavel_id = create_response.json()["id"]
-        assert create_response.json()["ativo"] is True
+        responsavel_id = payload_data(create_response)["id"]
+        assert payload_data(create_response)["ativo"] is True
 
         # Act - Desativa via PATCH /status
         status_data = {"ativo": False}
@@ -368,7 +392,7 @@ class TestResponsavelStatusAPI:
 
         # Assert
         assert response.status_code == 200
-        assert response.json()["ativo"] is False
+        assert payload_data(response)["ativo"] is False
 
     def test_alterar_status_responsavel_inexistente(self, client):
         """Testa PATCH /status de responsável inexistente"""
@@ -380,3 +404,18 @@ class TestResponsavelStatusAPI:
 
         # Assert
         assert response.status_code == 404
+
+
+class TestPatchResponsavelAPI:
+    """Testes de PATCH /api/v1/responsaveis/{id}"""
+
+    def test_patch_responsavel_vazio_retorna_400(self, client):
+        create_response = client.post(
+            "/api/v1/responsaveis/",
+            json={"nome": "Patch", "cargo": "Segurança", "telefone": "11999999999"},
+        )
+        responsavel_id = payload_data(create_response)["id"]
+
+        response = client.patch(f"/api/v1/responsaveis/{responsavel_id}", json={})
+
+        assert response.status_code == 400

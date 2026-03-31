@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -16,6 +17,12 @@ class ReclamanteUpdate(ReclamanteBase):
     """Schema para atualização completa de Reclamante (PUT).
     Todos os campos são obrigatórios — o recurso é substituído integralmente."""
     
+
+class ReclamantePatch(BaseModel):
+    """Schema para atualização parcial de Reclamante (PATCH)."""
+    nome: Optional[str] = Field(None, min_length=1, max_length=255)
+    telefone: Optional[str] = Field(None, min_length=1, max_length=100)
+    documento: Optional[str] = None
 
 
 class ReclamanteResponse(ReclamanteBase):

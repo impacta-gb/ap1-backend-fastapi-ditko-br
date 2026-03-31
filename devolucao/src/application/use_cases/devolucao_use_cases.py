@@ -35,19 +35,19 @@ class CreateDevolucaoUseCase:
         
         # Validação: Item deve existir
         if not await self.repository.exists_item(devolucao.item_id):
-            raise ValueError(f"Item com ID {devolucao.item_id} não encontrado no sistema")
+            raise ValueError(f"Item com ID {devolucao.item_id} não encontrado no sistema.")
 
         # Validação: Não pode existir devolução anterior para o mesmo item
         if await self.repository.exists_devolucao_for_item(devolucao.item_id):
-            raise ValueError(f"Item com ID {devolucao.item_id} já possui devolução registrada")
+            raise ValueError(f"Item com ID {devolucao.item_id} já possui devolução registrada.")
         
         # Validação: Item não pode ter sido devolvido
         if not await self.repository.exists_item_not_devolvido(devolucao.item_id):
-            raise ValueError(f"Item com ID {devolucao.item_id} já foi devolvido anteriormente")
+            raise ValueError(f"Item com ID {devolucao.item_id} já foi devolvido anteriormente.")
         
         # Validação: Reclamante deve existir
         if not await self.repository.exists_reclamante(devolucao.reclamante_id):
-            raise ValueError(f"Reclamante com ID {devolucao.reclamante_id} não encontrado no sistema")
+            raise ValueError(f"Reclamante com ID {devolucao.reclamante_id} não encontrado no sistema.")
         
         return await self.repository.create(devolucao)
     

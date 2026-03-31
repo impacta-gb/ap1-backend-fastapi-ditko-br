@@ -1,6 +1,80 @@
-version: '3.8'
-
 services:
+
+  item:
+    build: ./item
+    working_dir: /app/item
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: item
+
+  local:
+    build: ./local
+    working_dir: /app/local
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: local
+
+  responsavel:
+    build: ./responsavel
+    working_dir: /app/responsavel
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: responsavel
+
+  devolucao:
+    build: ./devolucao
+    working_dir: /app/devolucao
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: devolucao
+
+  reclamante:
+    build: ./reclamante
+    working_dir: /app/reclamante
+    environment:
+      PYTHONPATH: /app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./:/app
+    networks:
+      - backend
+      - kafka-network
+    container_name: reclamante
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
@@ -28,11 +102,13 @@ services:
     networks:
       - kafka-network
     healthcheck:
-      test: kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 5s
       timeout: 10s
       retries: 5
 
 networks:
+  backend:
+    driver: bridge
   kafka-network:
     driver: bridge

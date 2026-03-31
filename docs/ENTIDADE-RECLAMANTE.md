@@ -1,4 +1,4 @@
-# Implementação da Entidade Reclamante - Arquitetura Diplomata
+﻿# Implementação da Entidade Reclamante - Arquitetura Diplomata
 
 ## O que foi implementado
 
@@ -111,6 +111,7 @@ Endpoints REST implementados:
 | GET | /api/v1/reclamantes/ | Listar todos (paginado) |
 | GET | /api/v1/reclamantes/{reclamante_id} | Buscar reclamante por ID |
 | PUT | /api/v1/reclamantes/{reclamante_id} | Atualizar reclamante |
+| PATCH | /api/v1/reclamantes/{reclamante_id} | Atualização parcial |
 | DELETE | /api/v1/reclamantes/{reclamante_id} | Deletar reclamante |
 
 Caracteristicas:
@@ -121,7 +122,7 @@ Caracteristicas:
 
 ### 6. Arquivos de Configuração
 
-#### app.py - Atualizado
+#### main.py - Atualizado
 - Importação do módulo reclamante
 - Lifespan atualizado para inicializar os cinco bancos:
   - init_db_item() - Banco de items
@@ -197,18 +198,18 @@ if limit <= 0 or limit > 1000:
 
 ### 1. Executar a Aplicação
 ```bash
-poetry run uvicorn app:app --reload
+poetry run uvicorn main:app --reload --port 5004
 ```
 
 ### 2. Acessar Documentação
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:5004/docs
+- ReDoc: http://localhost:5004/redoc
 
 ### 3. Testar Endpoints
 
 #### Criar Reclamante
 ```bash
-curl -X POST "http://localhost:8000/api/v1/reclamantes/" \
+curl -X POST "http://localhost:5004/api/v1/reclamantes/" \
   -H "Content-Type: application/json" \
   -d '{
     "nome": "Maria Aparecida Souza",
@@ -229,7 +230,7 @@ Resposta:
 
 #### Listar Todos
 ```bash
-curl -X GET "http://localhost:8000/api/v1/reclamantes/?skip=0&limit=10"
+curl -X GET "http://localhost:5004/api/v1/reclamantes/?skip=0&limit=10"
 ```
 
 Resposta:
@@ -251,12 +252,12 @@ Resposta:
 
 #### Buscar por ID
 ```bash
-curl -X GET "http://localhost:8000/api/v1/reclamantes/1"
+curl -X GET "http://localhost:5004/api/v1/reclamantes/1"
 ```
 
 #### Atualizar
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/reclamantes/1" \
+curl -X PUT "http://localhost:5004/api/v1/reclamantes/1" \
   -H "Content-Type: application/json" \
   -d '{
     "nome": "Maria Souza",
@@ -267,7 +268,7 @@ curl -X PUT "http://localhost:8000/api/v1/reclamantes/1" \
 
 #### Deletar
 ```bash
-curl -X DELETE "http://localhost:8000/api/v1/reclamantes/1"
+curl -X DELETE "http://localhost:5004/api/v1/reclamantes/1"
 ```
 
 ## Diferenças em Relação às Demais Entidades
@@ -286,7 +287,6 @@ curl -X DELETE "http://localhost:8000/api/v1/reclamantes/1"
 
 ### Operações Disponíveis
 - Possui CRUD básico com listagem paginada
-- Não possui PATCH dedicado
 - Não possui buscas especializadas por documento ou telefone
 
 ## Integração Futura com Devolucao
@@ -376,7 +376,7 @@ docs/ENTIDADE-RECLAMANTE.md
 
 ### Modificados
 ```
-app.py          # Inclusão de rotas e lifespan para init_db_reclamante()
+main.py          # Inclusão de rotas e lifespan para init_db_reclamante()
 ```
 
 ## Referências
@@ -392,3 +392,5 @@ app.py          # Inclusão de rotas e lifespan para init_db_reclamante()
 Projeto Frameworks Full Stack - Prof. Giovani Bontempo - Faculdade Impacta
 
 **Data de Implementação**: 13 de Março de 2026
+
+
