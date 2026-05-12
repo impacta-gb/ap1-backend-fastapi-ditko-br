@@ -1,5 +1,26 @@
 services:
-  # Serviço de Item
+  # ==================== ZOOKEEPER ====================
+  - type: web
+    name: lostfound-zookeeper
+    runtime: docker
+    dockerfilePath: ./docker-compose.yml
+    plan: starter
+    port: 2181
+    healthCheckPath: /
+
+  # ==================== KAFKA ====================
+  - type: web
+    name: lostfound-kafka
+    runtime: docker
+    dockerfilePath: ./docker-compose.yml
+    plan: starter
+    port: 9092
+    healthCheckPath: /
+    envVars:
+      - key: KAFKA_ADVERTISED_LISTENERS
+        value: "PLAINTEXT://lostfound-kafka:9092"
+
+  # ==================== SERVIÇO DE ITEM ====================
   - type: web
     name: lostfound-item
     runtime: python
@@ -7,17 +28,16 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5000
     plan: starter
+    port: 5000
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
-        fromService:
-          type: env
-          name: KAFKA_BOOTSTRAP_SERVERS
+        value: "lostfound-kafka:9092"
       - key: DATABASE_URL
         fromService:
           type: pserv
-          name: lostfound-db
+          name: lostfound-db-item
           property: connectionString
       - key: ENV
         value: production
@@ -32,17 +52,16 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5001
     plan: starter
+    port: 5001
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
-        fromService:
-          type: env
-          name: KAFKA_BOOTSTRAP_SERVERS
+        value: "lostfound-kafka:9092"
       - key: DATABASE_URL
         fromService:
           type: pserv
-          name: lostfound-db
+          name: lostfound-db-local
           property: connectionString
       - key: ENV
         value: production
@@ -57,17 +76,16 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5002
     plan: starter
+    port: 5002
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
-        fromService:
-          type: env
-          name: KAFKA_BOOTSTRAP_SERVERS
+        value: "lostfound-kafka:9092"
       - key: DATABASE_URL
         fromService:
           type: pserv
-          name: lostfound-db
+          name: lostfound-db-responsavel
           property: connectionString
       - key: ENV
         value: production
@@ -82,17 +100,16 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5003
     plan: starter
+    port: 5003
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
-        fromService:
-          type: env
-          name: KAFKA_BOOTSTRAP_SERVERS
+        value: "lostfound-kafka:9092"
       - key: DATABASE_URL
         fromService:
           type: pserv
-          name: lostfound-db
+          name: lostfound-db-devolucao
           property: connectionString
       - key: ENV
         value: production
@@ -107,40 +124,49 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5004
     plan: starter
+    port: 5004
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
-        fromService:
-          type: env
-          name: KAFKA_BOOTSTRAP_SERVERS
+        value: "lostfound-kafka:9092"
       - key: DATABASE_URL
         fromService:
           type: pserv
-          name: lostfound-db
+          name: lostfound-db-reclamante
           property: connectionString
       - key: ENV
         value: production
       - key: LOG_LEVEL
         value: info
 
-  # Banco de Dados PostgreSQL
+  # Bancos de Dados PostgreSQL (um por serviço)
   - type: pserv
-    name: lostfound-db
-    databaseName: lostfound
-    user: lostfound_user
+    name: lostfound-db-item
+    databaseName: item_db
+    user: item_user
     plan: starter
 
-# Variáveis de ambiente compartilhadas
-# Adicione aqui os valores do seu Kafka (Confluent Cloud ou Upstash)
-envVars:
-  - key: KAFKA_BOOTSTRAP_SERVERS
-    value: "pkc-xxx.region.provider.confluent.cloud:9092"  # Substitua com seu broker
-  - key: KAFKA_SASL_MECHANISM
-    value: "PLAIN"
-  - key: KAFKA_SECURITY_PROTOCOL
-    value: "SASL_SSL"
-  - key: KAFKA_USERNAME
-    value: ""  # Adicionar sua chave de API
-  - key: KAFKA_PASSWORD
-    value: ""  # Adicionar sua senha
+  - type: pserv
+    name: lostfound-db-local
+    databaseName: local_db
+    user: local_user
+    plan: starter
+
+  - type: pserv
+    name: lostfound-db-responsavel
+    databaseName: responsavel_db
+    user: responsavel_user
+    plan: starter
+
+  - type: pserv
+    name: lostfound-db-devolucao
+    databaseName: devolucao_db
+    user: devolucao_user
+    plan: starter
+
+  - type: pserv
+    name: lostfound-db-reclamante
+    databaseName: reclamante_db
+    user: reclamante_user
+    plan: starter
