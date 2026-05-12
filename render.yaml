@@ -1,0 +1,146 @@
+services:
+  # Serviço de Item
+  - type: web
+    name: lostfound-item
+    runtime: python
+    rootDir: ./item
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 5000
+    plan: starter
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        fromService:
+          type: env
+          name: KAFKA_BOOTSTRAP_SERVERS
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: lostfound-db
+          property: connectionString
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+
+  # Serviço de Local
+  - type: web
+    name: lostfound-local
+    runtime: python
+    rootDir: ./local
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 5001
+    plan: starter
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        fromService:
+          type: env
+          name: KAFKA_BOOTSTRAP_SERVERS
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: lostfound-db
+          property: connectionString
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+
+  # Serviço de Responsável
+  - type: web
+    name: lostfound-responsavel
+    runtime: python
+    rootDir: ./responsavel
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 5002
+    plan: starter
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        fromService:
+          type: env
+          name: KAFKA_BOOTSTRAP_SERVERS
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: lostfound-db
+          property: connectionString
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+
+  # Serviço de Devolução
+  - type: web
+    name: lostfound-devolucao
+    runtime: python
+    rootDir: ./devolucao
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 5003
+    plan: starter
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        fromService:
+          type: env
+          name: KAFKA_BOOTSTRAP_SERVERS
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: lostfound-db
+          property: connectionString
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+
+  # Serviço de Reclamante
+  - type: web
+    name: lostfound-reclamante
+    runtime: python
+    rootDir: ./reclamante
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 5004
+    plan: starter
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        fromService:
+          type: env
+          name: KAFKA_BOOTSTRAP_SERVERS
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: lostfound-db
+          property: connectionString
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+
+  # Banco de Dados PostgreSQL
+  - type: pserv
+    name: lostfound-db
+    databaseName: lostfound
+    user: lostfound_user
+    plan: starter
+
+# Variáveis de ambiente compartilhadas
+# Adicione aqui os valores do seu Kafka (Confluent Cloud ou Upstash)
+envVars:
+  - key: KAFKA_BOOTSTRAP_SERVERS
+    value: "pkc-xxx.region.provider.confluent.cloud:9092"  # Substitua com seu broker
+  - key: KAFKA_SASL_MECHANISM
+    value: "PLAIN"
+  - key: KAFKA_SECURITY_PROTOCOL
+    value: "SASL_SSL"
+  - key: KAFKA_USERNAME
+    value: ""  # Adicionar sua chave de API
+  - key: KAFKA_PASSWORD
+    value: ""  # Adicionar sua senha
