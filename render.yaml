@@ -5,8 +5,6 @@ services:
     runtime: docker
     dockerfilePath: ./docker-compose.yml
     plan: starter
-    port: 2181
-    healthCheckPath: /
 
   # ==================== KAFKA ====================
   - type: web
@@ -14,8 +12,6 @@ services:
     runtime: docker
     dockerfilePath: ./docker-compose.yml
     plan: starter
-    port: 9092
-    healthCheckPath: /
     envVars:
       - key: KAFKA_ADVERTISED_LISTENERS
         value: "PLAINTEXT://lostfound-kafka:9092"
@@ -28,23 +24,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5000
     plan: starter
-    port: 5000
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: "lostfound-kafka:9092"
-      - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: lostfound-db-item
-          property: connectionString
       - key: ENV
         value: production
       - key: LOG_LEVEL
         value: info
 
-  # Serviço de Local
+  # ==================== SERVIÇO DE LOCAL ====================
   - type: web
     name: lostfound-local
     runtime: python
@@ -52,23 +42,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5001
     plan: starter
-    port: 5001
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: "lostfound-kafka:9092"
-      - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: lostfound-db-local
-          property: connectionString
       - key: ENV
         value: production
       - key: LOG_LEVEL
         value: info
 
-  # Serviço de Responsável
+  # ==================== SERVIÇO DE RESPONSÁVEL ====================
   - type: web
     name: lostfound-responsavel
     runtime: python
@@ -76,23 +60,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5002
     plan: starter
-    port: 5002
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: "lostfound-kafka:9092"
-      - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: lostfound-db-responsavel
-          property: connectionString
       - key: ENV
         value: production
       - key: LOG_LEVEL
         value: info
 
-  # Serviço de Devolução
+  # ==================== SERVIÇO DE DEVOLUÇÃO ====================
   - type: web
     name: lostfound-devolucao
     runtime: python
@@ -100,23 +78,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5003
     plan: starter
-    port: 5003
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: "lostfound-kafka:9092"
-      - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: lostfound-db-devolucao
-          property: connectionString
       - key: ENV
         value: production
       - key: LOG_LEVEL
         value: info
 
-  # Serviço de Reclamante
+  # ==================== SERVIÇO DE RECLAMANTE ====================
   - type: web
     name: lostfound-reclamante
     runtime: python
@@ -124,49 +96,12 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 5004
     plan: starter
-    port: 5004
     envVars:
       - key: PYTHONPATH
         value: /app
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: "lostfound-kafka:9092"
-      - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: lostfound-db-reclamante
-          property: connectionString
       - key: ENV
         value: production
       - key: LOG_LEVEL
         value: info
-
-  # Bancos de Dados PostgreSQL (um por serviço)
-  - type: pserv
-    name: lostfound-db-item
-    databaseName: item_db
-    user: item_user
-    plan: starter
-
-  - type: pserv
-    name: lostfound-db-local
-    databaseName: local_db
-    user: local_user
-    plan: starter
-
-  - type: pserv
-    name: lostfound-db-responsavel
-    databaseName: responsavel_db
-    user: responsavel_user
-    plan: starter
-
-  - type: pserv
-    name: lostfound-db-devolucao
-    databaseName: devolucao_db
-    user: devolucao_user
-    plan: starter
-
-  - type: pserv
-    name: lostfound-db-reclamante
-    databaseName: reclamante_db
-    user: reclamante_user
-    plan: starter
